@@ -1,0 +1,61 @@
+﻿<Window x:Class="Durchlauftraeger.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Durchlaufträgerberechnung Stand Juni 2023
+                                                            © Prof. Karl Beucke" Height="450" Width="780">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" Margin="0,0,0,0">
+        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0"   Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="5,0,0,0" Background="SkyBlue"
+                    Click="NeuerTräger">
+                    <TextBlock FontWeight="Bold" Height="21">neu</TextBlock>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="60,0,0,0" Background="LawnGreen"
+                    Click="EinspannungÄndern">
+                    <Image Source="Ressourcen\Einspannung.jpg"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="115,0,0,0" Background="LawnGreen"
+                    Click="NeuesLager">
+                    <Image Source="Ressourcen/Auflager verschieblich.jpg"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="170,0,0,0" Background="LightCoral"
+                    Click="NeuePunktlast">
+                    <Image Source="Ressourcen/Punktlast.jpg"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="225,0,0,0" Background="LightCoral"
+                    Click="NeueGleichlast">
+                    <Image Source="Ressourcen/Gleichlast.jpg"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="280,0,0,0" Background="Yellow"
+                    Click="NeueBerechnung">
+                    <Image Source="Ressourcen/Zustand.jpg" Height="25" Width="43"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="335,0,0,0" Background="LightGray"
+                        Click="TexteAnzeigen">
+                        <Image Source="Ressourcen/Text.jpg" Height="25" Width="43"></Image>
+                </Button>
+            </Grid>
+            <Canvas x:Name="VisualErgebnisse" Height="395" Width="763" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                    MouseLeftButtonDown="OnMouseLeftButtonDown"
+                    MouseRightButtonDown="OnMouseRightButtonDown">
+                <Popup x:Name="MyPopup" Placement="MousePoint">
+                    <TextBlock x:Name="MyPopupText" Background="LightBlue" Foreground="Blue" Padding="10"/>
+                </Popup>
+            </Canvas>
+        </StackPanel>
+    </ScrollViewer>
+</Window>
