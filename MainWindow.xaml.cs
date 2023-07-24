@@ -15,6 +15,7 @@ public partial class MainWindow
     private DialogNeuerTräger? _neuerTräger;
     private DialogEinspannung? _einspannung;
     private DialogLager? _neuesLager;
+    public static bool KeineLast = true;
     private DialogPunktlast? _neuePunktlast;
     private DialogGleichlast? _neueGleichlast;
     private Darstellung? _darstellung;
@@ -38,6 +39,7 @@ public partial class MainWindow
     private void NeuerTräger(object sender, RoutedEventArgs e)
     {
         VisualErgebnisse.Children.Clear();
+        KeineLast = true;
         _dlt = new Modell();
         _neuerTräger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neuerTräger.ShowDialog();
@@ -92,6 +94,7 @@ public partial class MainWindow
 
     private void NeuePunktlast(object sender, RoutedEventArgs e)
     {
+        KeineLast = false;
         VisualErgebnisse.Children.Clear();
         _neuePunktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neuePunktlast.ShowDialog();
@@ -99,6 +102,7 @@ public partial class MainWindow
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
+        KeineLast = false;
         VisualErgebnisse.Children.Clear();
         _neueGleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neueGleichlast.ShowDialog();
@@ -133,17 +137,16 @@ public partial class MainWindow
         // jede Liste enthält eine weitere Liste mit Übertragungspunkte des Feldes
         var felder = new List<List<int>>();
         var punkte = new List<int> { 0 };
-        var keineLast = true;
         for (var i = 1; i < _dlt.Übertragungspunkte.Count; i++)
         {
-            if (_dlt.Übertragungspunkte[i].Typ == 1) keineLast = false;
+            //if (_dlt.Übertragungspunkte[i].Typ == 1) keineLast = false;
             punkte.Add(i);
             if (_dlt.Übertragungspunkte[i].Typ != 3) continue;
             felder.Add(punkte);
             punkte = new List<int> { i };
         }
 
-        if (keineLast)
+        if (KeineLast)
         {
             var nurTräger = new Darstellung(_dlt, VisualErgebnisse);
             nurTräger.FestlegungAuflösung();
@@ -156,27 +159,27 @@ public partial class MainWindow
 
         for (var i = 0; i < felder.Count; i++)
         {
-            double[] Lk;
             rs = new double[2];
 
             // ein Feld hat mehrere Abschnitte
             for (var k = 1; k < felder[i].Count; k++)
             {
                 double l;
+                double[] lü;
                 var pik = _dlt.Übertragungspunkte[felder[i][k]];
                 var pikm1 = _dlt.Übertragungspunkte[felder[i][k - 1]];
 
                 // zusätzliche neue Felder werden über eine Kopplungmatrix angeschlossen
-                double[,] Z;
+                double[,] z;
                 if (i > 0 && k == 1)
                 {
-                    Z = _dlt.Übertragungspunkte[felder[i][0]].AnfangKopplung!;
-                    Lk = _dlt.Übertragungspunkte[felder[i][0]].Lk!;
+                    z = _dlt.Übertragungspunkte[felder[i][0]].AnfangKopplung!;
+                    lü = _dlt.Übertragungspunkte[felder[i][0]].Lk!;
                 }
                 else
                 {
-                    Z = pikm1.Z!;
-                    Lk = pikm1.LastÜ!;
+                    z = pikm1.Z!;
+                    lü = pikm1.LastÜ!;
                 }
 
                 switch (pik.Typ)
@@ -185,7 +188,7 @@ public partial class MainWindow
                     case 0:
                         l = pik.Position - pikm1.Position;
                         pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, Z);
+                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
                         break;
                     // Abschnitt mit Last
                     case 1:
@@ -194,15 +197,15 @@ public partial class MainWindow
                         // Punktlast
                         if (pik.Lastlänge < double.Epsilon)
                         {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, Z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, Lk);
+                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
+                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
                             pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Last!);
                         }
                         // Gleichlast
                         else
                         {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, Z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, Lk);
+                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
+                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
                             pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Last!);
                         }
                         break;
@@ -210,8 +213,9 @@ public partial class MainWindow
                     case 3:
                         l = pik.Position - pikm1.Position;
                         pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, Z);
-                        pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, Lk);
+                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
+                        pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
+                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Last!);
                         break;
                 }
             }
@@ -231,13 +235,14 @@ public partial class MainWindow
             // Mehrfeldträger, nicht im letzten Feld
             if (i >= felder.Count - 1) continue;
             // Koppelfedermatrix mit Lastterm lK
-            var kk1 = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i].Count - 1].Z!, 0, 1);
-            var kk2 = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i].Count - 1].Z!, 2, 3);
+            var piE = _dlt.Übertragungspunkte[felder[i][felder[i].Count - 1]];
+            var kk1 = Werkzeuge.SubMatrix(piE.Z!, 0, 1);
+            var kk2 = Werkzeuge.SubMatrix(piE.Z!, 2, 3);
             kk1Inv = Werkzeuge.Matrix2By2Inverse(kk1);
-
             var kk = Werkzeuge.MatrixMatrixMultiply(kk2, kk1Inv);
-            var l1 = Werkzeuge.SubVektor(_dlt.Übertragungspunkte[felder[i].Count - 1].LastÜ!, 0, 1);
-            var l2 = Werkzeuge.SubVektor(_dlt.Übertragungspunkte[felder[i].Count - 1].LastÜ!, 2, 3);
+
+            var l1 = Werkzeuge.SubVektor(piE.LastÜ!, 0, 1);
+            var l2 = Werkzeuge.SubVektor(piE.LastÜ!, 2, 3);
             lk = Werkzeuge.MatrixVectorMultiply(kk, l1);
             lk = Werkzeuge.VectorVectorMinus(l2, lk);
 
@@ -248,6 +253,18 @@ public partial class MainWindow
 
             _dlt.Übertragungspunkte[felder[i + 1][0]].Lk![2] = lk[0];
             _dlt.Übertragungspunkte[felder[i + 1][0]].Lk![3] = lk[1];
+
+            if (i >= felder.Count - 2) continue;
+            // gelenkiges Zwischenlager am Feldende: w = M = 0
+            //var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i][2]].Z!, 0, 2);
+            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i][felder[i].Count - 1]].Z!, 0, 2);
+            lk = _dlt.Übertragungspunkte[felder[i][2]].LastÜ!;
+
+            rs = Werkzeuge.SubVektor(lk, 0, 2);
+            rs[0] = -rs[0];
+            rs[1] = -rs[1];
+            var gaussSolver = new Gleichungslöser(matrix, rs);
+            if (gaussSolver.Decompose()) gaussSolver.Solve();
         }
 
         // letztes Feld der Übertragung
@@ -267,8 +284,7 @@ public partial class MainWindow
         else if (_dlt.AnfangFest)
         {
             // gelenkiges Lager am Ende: we = Me = 0
-            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z!,
-                0, 2);
+            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z!, 0, 2);
             lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ!;
 
             rs = Werkzeuge.SubVektor(lk, 0, 2);
@@ -278,6 +294,7 @@ public partial class MainWindow
             if (gaussSolver.Decompose()) gaussSolver.Solve();
         }
 
+        // '^' unary_expression is called the "index from end operator"
         // Endvektor im letzten Feld, indexEnde = felder[^1].Count - 1;
         var pEe = _dlt.Übertragungspunkte[felder[^1][^1]];
         pEe.ZL = Werkzeuge.MatrixVectorMultiply(pEe.Z!, rs);
@@ -521,16 +538,19 @@ public partial class MainWindow
 
             if (item.Name.Contains("Gleichlast"))
             {
-                var startIndex = "Gleichlast".Length;
-                var index = int.Parse(item.Name[startIndex..]);
+                // Index des Übertragungspunktes am Ende der Gleichlast angehängt an "Gleichlast"
+                var länge = "Gleichlast".Length;
+                // Der Range Operator (..) wird benutzt als Abkürzung für den Zugriff auf arrays
+                // binär(a..b): von-bis, unär(a..): von-Ende
+                var endIndex = int.Parse(item.Name[länge..]);
 
-                //Übertragungspunkte
-                if (_dlt?.Übertragungspunkte[index] == null) continue;
-                var gleichlast = new DialogGleichlast(_dlt, index)
+                // Übertragungspunkt am Ende enthält Lastlänge und -wert
+                if (_dlt?.Übertragungspunkte[endIndex] == null) continue;
+                DialogGleichlast gleichlast = new(_dlt, endIndex)
                 {
-                    Anfang = { Text = _dlt.Übertragungspunkte[index].Position.ToString("G4") },
-                    Länge = { Text = _dlt.Übertragungspunkte[index].Lastlänge.ToString("G4") },
-                    Lastwert = { Text = (_dlt.Übertragungspunkte[index].Lastwert).ToString("G4") }
+                    Anfang = { Text = _dlt.Übertragungspunkte[endIndex - 1].Position.ToString("G4") },
+                    Länge = { Text = _dlt.Übertragungspunkte[endIndex].Lastlänge.ToString("G4") },
+                    Lastwert = { Text = (_dlt.Übertragungspunkte[endIndex].Lastwert).ToString("G4") }
                 };
                 MyPopup.IsOpen = false;
                 gleichlast.ShowDialog();
@@ -538,7 +558,7 @@ public partial class MainWindow
                 Neuberechnung();
             }
 
-            if (item.Name.Contains("Lager"))
+            if (!item.Name.Contains("Lager")) continue;
             {
                 var startIndex = "Lager".Length;
                 var index = int.Parse(item.Name[startIndex..]);

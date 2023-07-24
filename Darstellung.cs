@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -65,9 +66,8 @@ public class Darstellung
 
         ÜbertragungspunkteZeichnen();
         LagerZeichnen();
-        LastenZeichnen();
+        if (MainWindow.KeineLast == false) LastenZeichnen();
     }
-
     private void ÜbertragungspunkteZeichnen()
     {
         // Übertragungspunkte werden als EllipseGeometry der GeometryGroup tragwerk hinzugefügt
@@ -264,21 +264,21 @@ public class Darstellung
         const int maxLastScreen = 50;
         var maxLastWert = 1.0;
 
-        for (var i = 1; i < _endIndex; i++)
+        for (var i = 1; i < _endIndex + 1; i++)
         {
             if (Math.Abs(_dlt.Übertragungspunkte[i].Lastwert) > Math.Abs(maxLastWert))
                 maxLastWert = Math.Abs(_dlt.Übertragungspunkte[i].Lastwert);
         }
         var lastAuflösung = (int)(maxLastScreen / maxLastWert);
 
-        for (var index = 1; index < _endIndex; index++)
+        for (var index = 1; index < _endIndex + 1; index++)
         {
             var lastPunkt = _dlt.Übertragungspunkte[index];
-            if (lastPunkt.Typ != 1) continue;
 
             // Punktlasten
             if (lastPunkt.Lastlänge < double.Epsilon)
             {
+                if (lastPunkt.Typ != 1) continue;
                 var pathGeometry = new PathGeometry();
                 var pathFigure = new PathFigure();
 
@@ -322,7 +322,6 @@ public class Darstellung
             else
             {
                 var lastPfeilGroesse = 6;
-                lastAuflösung *= 2;
 
                 var pathGeometry = new PathGeometry();
                 var pathFigure = new PathFigure();
@@ -461,9 +460,8 @@ public class Darstellung
                     mMax = pim1.ZR![2] + pim1.ZR![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
 
                     // maxPunkt mit Kontrollpunkt für quadratischen Bezier-Spline
-                    // var maxPunkt = new Point((pim1.Position+abstandMax)*_auflösung, mMax * _momentenAuflösung*kontrollAbstand);
                     maxPunkt = new Point((pim1.Position + abstandMax) * _auflösung, mMax * _momentenAuflösung);
-                    var vec = new Point((_dlt.Übertragungspunkte[index + 1].Position) * _auflösung, pi.ZL![2] * _momentenAuflösung) - maxPunkt;
+                    var vec = new Point((_dlt.Übertragungspunkte[index].Position) * _auflösung, pi.ZL![2] * _momentenAuflösung) - maxPunkt;
                     RotateVectorScreen(vec, 90);
                     vec.Normalize();
                     kontrollPunkt = maxPunkt - vec * 50;
@@ -679,7 +677,7 @@ public class Darstellung
 
     public void TexteEntfernen()
     {
-        foreach (TextBlock schnittgrößenText in Texte) { _visual.Children.Remove(schnittgrößenText); }
+        foreach (TextBlock schnittgrößenText in Texte.Cast<TextBlock>()) { _visual.Children.Remove(schnittgrößenText); }
     }
     private static Point TransformPunkt(Übertragungspunkt knoten, double auflösung)
     {
