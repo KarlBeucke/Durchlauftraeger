@@ -354,7 +354,6 @@ public partial class MainWindow
         }
 
         _darstellung = new Darstellung(_dlt!, VisualErgebnisse);
-        bbbbbb
         _darstellung.FestlegungAuflösung();
         _darstellung.TrägerDarstellen();
         _darstellung.Momentenverlauf();

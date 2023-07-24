@@ -37,7 +37,6 @@ public partial class DialogLager
             Last = new double[4],
             ZL = new double[4],
             ZR = new double[4],
-            Last = new double[4],
             Lk = new double[4]
         };
         _dlt?.Übertragungspunkte.Add(übertragungsPunkt);
