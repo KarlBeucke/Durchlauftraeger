@@ -14,28 +14,29 @@ public class Darstellung
     private readonly Modell _dlt;
     private readonly Canvas _visual;
     private double _screenV, _screenH;
-    private double _auflösung;
+    public double _auflösung;
     private double _maxX;
     private const int RandLinks = 60;
-    private double _plazierungV1, _plazierungV2, _plazierungV3;
-    private double _plazierungH;
+    public double _plazierungV1, _plazierungV2, _plazierungV3;
+    public double _plazierungH;
     private int _endIndex;
     private int _momentenAuflösung;
     private List<object> Texte { get; }
+    public List<object> KnotenIDs { get; }
 
     public Darstellung(Modell dlt, Canvas visual)
     {
         _dlt = dlt;
         _visual = visual;
         Texte = new List<object>();
+        KnotenIDs = new List<object>();
     }
     public void FestlegungAuflösung()
     {
         _screenH = _visual.ActualWidth;
         _screenV = _visual.ActualHeight;
 
-        var indexMax = _dlt.Übertragungspunkte.Count - 1;
-        _maxX = _dlt.Übertragungspunkte[indexMax].Position;
+        _maxX = double.Parse(MainWindow._neuerTräger!.Gesamtlänge.Text);
 
         _auflösung = (_screenH - 2 * RandLinks) / _maxX;
         _plazierungH = RandLinks;
@@ -65,6 +66,7 @@ public class Darstellung
         _visual.Children.Add(trägerPath);
 
         ÜbertragungspunkteZeichnen();
+        ÜbertragungspunkteIDs();
         LagerZeichnen();
         if (MainWindow.KeineLast == false) LastenZeichnen();
     }
@@ -88,6 +90,22 @@ public class Darstellung
             _visual.Children.Add(tragwerkPath);
             Canvas.SetLeft(tragwerkPath, _plazierungH);
             Canvas.SetTop(tragwerkPath, _plazierungV1);
+        }
+    }
+    private void ÜbertragungspunkteIDs()
+    {
+        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+        {
+            var id = new TextBlock
+            {
+                FontSize = 12,
+                Text = i.ToString(),
+                Foreground = Black
+            };
+            Canvas.SetTop(id, _plazierungV1);
+            Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * _auflösung + _plazierungH + 5);
+            _visual.Children.Add(id);
+            KnotenIDs.Add(id);
         }
     }
     private void LagerZeichnen()
@@ -690,5 +708,12 @@ public class Darstellung
         var angle = winkel * Math.PI / 180;
         return new Vector(vector.X * Math.Cos(angle) - vector.Y * Math.Sin(angle),
             vector.X * Math.Sin(angle) + vector.Y * Math.Cos(angle));
+    }
+    public double[] TransformBildPunkt(Point point)
+    {
+        var koordinaten = new double[2];
+        koordinaten[0] = (point.X - _plazierungH) / _auflösung;
+        koordinaten[1] = (-point.Y + _plazierungV1) / _auflösung;
+        return koordinaten;
     }
 }

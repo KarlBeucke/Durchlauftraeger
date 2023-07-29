@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -11,28 +13,36 @@ namespace Durchlauftraeger;
 
 public partial class MainWindow
 {
-    private Modell? _dlt;
-    private DialogNeuerTräger? _neuerTräger;
+    private static Modell? _dlt;
+    private readonly Berechnung _berechnung;
+    public static DialogNeuerTräger? _neuerTräger;
     private DialogEinspannung? _einspannung;
     private DialogLager? _neuesLager;
     public static bool KeineLast = true;
     private DialogPunktlast? _neuePunktlast;
     private DialogGleichlast? _neueGleichlast;
-    private Darstellung? _darstellung;
+    public static Darstellung? Darstellung;
     private bool _texteAn;
+
+    private Point _mittelpunkt;
+    private PunktNeu? _neuerPunkt;
+    private bool _isDragging;
+    public static Canvas? _dltVisual;
+    public static Ellipse? Pilot;
 
     //alle gefundenen "Shapes" werden in dieser Liste gesammelt
     private List<Shape>? _hitList;
     private EllipseGeometry? _hitArea;
+    //alle gefundenen "TextBlocks" werden in dieser Liste gesammelt
+    private readonly List<TextBlock> _hitTextBlock = new();
+
     public MainWindow()
     {
         InitializeComponent();
-        _neuerTräger = null;
-        _einspannung = null;
-        _neuesLager = null;
-        _neuePunktlast = null;
-        _neueGleichlast = null;
-        _darstellung = null;
+        _dlt = new Modell();
+        _dltVisual = VisualErgebnisse;
+        Darstellung = new Darstellung(_dlt, VisualErgebnisse);
+        _berechnung = new(_dlt, _dltVisual!, Darstellung);
         _texteAn = true;
     }
 
@@ -40,10 +50,10 @@ public partial class MainWindow
     {
         VisualErgebnisse.Children.Clear();
         KeineLast = true;
-        _dlt = new Modell();
         _neuerTräger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neuerTräger.ShowDialog();
-        Neuberechnung();
+        Darstellung!.FestlegungAuflösung();
+        _berechnung.Neuberechnung();
     }
 
     private void EinspannungÄndern(object sender, RoutedEventArgs e)
@@ -63,7 +73,7 @@ public partial class MainWindow
         else if (_dlt.EndeFest) _einspannung.EinspannungEnde.IsChecked = true;
         _einspannung.ShowDialog();
 
-        if (_dlt!.AnfangFest)
+        if (_dlt.AnfangFest)
         {
             // eingespannter Rand am Trägeranfang, wa = phia = 0
             var zStartFest = new double[4, 2];
@@ -81,7 +91,7 @@ public partial class MainWindow
             // zaL = zStartGelenk * (phia, Qa)
             _dlt.Übertragungspunkte[0].Z = zStartGelenk;
         }
-        Neuberechnung();
+        _berechnung.Neuberechnung();
     }
 
     private void NeuesLager(object sender, RoutedEventArgs e)
@@ -89,7 +99,7 @@ public partial class MainWindow
         VisualErgebnisse.Children.Clear();
         _neuesLager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neuesLager.ShowDialog();
-        Neuberechnung();
+        _berechnung.Neuberechnung();
     }
 
     private void NeuePunktlast(object sender, RoutedEventArgs e)
@@ -98,7 +108,7 @@ public partial class MainWindow
         VisualErgebnisse.Children.Clear();
         _neuePunktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neuePunktlast.ShowDialog();
-        Neuberechnung();
+        _berechnung.Neuberechnung();
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
@@ -106,7 +116,7 @@ public partial class MainWindow
         VisualErgebnisse.Children.Clear();
         _neueGleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _neueGleichlast.ShowDialog();
-        Neuberechnung();
+        _berechnung.Neuberechnung();
     }
 
     public class OrdneAufsteigendeKoordinaten : IComparer<Übertragungspunkt>
@@ -117,331 +127,31 @@ public partial class MainWindow
             return comparePosition == 3 ? x.Position.CompareTo(y.Position) : comparePosition;
         }
     }
+
     private void NeueBerechnung(object sender, RoutedEventArgs e)
     {
-        Neuberechnung();
+        _berechnung.Neuberechnung();
     }
-
-    private void Neuberechnung()
-    {
-        var kk1Inv = new double[2, 2];
-        double[] lk;
-        var rs = Array.Empty<double>();
-
-        // Sortierung der Übertragungspunkte nach aufsteigender Position,+ x-Koordinate
-        IComparer<Übertragungspunkt> comparer = new OrdneAufsteigendeKoordinaten();
-        _dlt!.Übertragungspunkte.Sort(comparer);
-
-        // Aufteilung in Felder zwischen Auflagern
-        // Anzahl Felder wird in Liste gesammelt,
-        // jede Liste enthält eine weitere Liste mit Übertragungspunkte des Feldes
-        var felder = new List<List<int>>();
-        var punkte = new List<int> { 0 };
-        for (var i = 1; i < _dlt.Übertragungspunkte.Count; i++)
-        {
-            //if (_dlt.Übertragungspunkte[i].Typ == 1) keineLast = false;
-            punkte.Add(i);
-            if (_dlt.Übertragungspunkte[i].Typ != 3) continue;
-            felder.Add(punkte);
-            punkte = new List<int> { i };
-        }
-
-        if (KeineLast)
-        {
-            var nurTräger = new Darstellung(_dlt, VisualErgebnisse);
-            nurTräger.FestlegungAuflösung();
-
-            nurTräger.TrägerDarstellen();
-            return;
-        }
-
-        VisualErgebnisse.Children.Clear();
-
-        for (var i = 0; i < felder.Count; i++)
-        {
-            rs = new double[2];
-
-            // ein Feld hat mehrere Abschnitte
-            for (var k = 1; k < felder[i].Count; k++)
-            {
-                double l;
-                double[] lü;
-                var pik = _dlt.Übertragungspunkte[felder[i][k]];
-                var pikm1 = _dlt.Übertragungspunkte[felder[i][k - 1]];
-
-                // zusätzliche neue Felder werden über eine Kopplungmatrix angeschlossen
-                double[,] z;
-                if (i > 0 && k == 1)
-                {
-                    z = _dlt.Übertragungspunkte[felder[i][0]].AnfangKopplung!;
-                    lü = _dlt.Übertragungspunkte[felder[i][0]].Lk!;
-                }
-                else
-                {
-                    z = pikm1.Z!;
-                    lü = pikm1.LastÜ!;
-                }
-
-                switch (pik.Typ)
-                {
-                    // freier Abschnitt
-                    case 0:
-                        l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                        break;
-                    // Abschnitt mit Last
-                    case 1:
-                        l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        // Punktlast
-                        if (pik.Lastlänge < double.Epsilon)
-                        {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
-                            pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Last!);
-                        }
-                        // Gleichlast
-                        else
-                        {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
-                            pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Last!);
-                        }
-                        break;
-                    // Abschnitt mit Lager am Ende, Übertragung des Zustandsvektors mit Federkopplung auf nächsten Abschnitt
-                    case 3:
-                        l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                        pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
-                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Last!);
-                        break;
-                }
-            }
-
-            if (felder.Count == 1)
-            {
-                Einfeldträger();
-                _darstellung = new Darstellung(_dlt!, VisualErgebnisse);
-                _darstellung.FestlegungAuflösung();
-                _darstellung.TrägerDarstellen();
-                _darstellung.Momentenverlauf();
-                _darstellung.Querkraftverlauf();
-                _darstellung.TexteAnzeigen();
-                return;
-            }
-
-            // Mehrfeldträger, nicht im letzten Feld
-            if (i >= felder.Count - 1) continue;
-            // Koppelfedermatrix mit Lastterm lK
-            var piE = _dlt.Übertragungspunkte[felder[i][felder[i].Count - 1]];
-            var kk1 = Werkzeuge.SubMatrix(piE.Z!, 0, 1);
-            var kk2 = Werkzeuge.SubMatrix(piE.Z!, 2, 3);
-            kk1Inv = Werkzeuge.Matrix2By2Inverse(kk1);
-            var kk = Werkzeuge.MatrixMatrixMultiply(kk2, kk1Inv);
-
-            var l1 = Werkzeuge.SubVektor(piE.LastÜ!, 0, 1);
-            var l2 = Werkzeuge.SubVektor(piE.LastÜ!, 2, 3);
-            lk = Werkzeuge.MatrixVectorMultiply(kk, l1);
-            lk = Werkzeuge.VectorVectorMinus(l2, lk);
-
-            // Anfangsvektor nächstes Feld
-            double[,] kopplung = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { kk[0, 0], kk[0, 1], 1, 0 }, { kk[1, 0], kk[1, 1], 0, 1 } };
-            double[,] anfang = { { 0, 0 }, { 1, 0 }, { 0, 0 }, { 0, 1 } };
-            _dlt.Übertragungspunkte[felder[i + 1][0]].AnfangKopplung = Werkzeuge.MatrixMatrixMultiply(kopplung, anfang);
-
-            _dlt.Übertragungspunkte[felder[i + 1][0]].Lk![2] = lk[0];
-            _dlt.Übertragungspunkte[felder[i + 1][0]].Lk![3] = lk[1];
-
-            if (i >= felder.Count - 2) continue;
-            // gelenkiges Zwischenlager am Feldende: w = M = 0
-            //var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i][2]].Z!, 0, 2);
-            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[felder[i][felder[i].Count - 1]].Z!, 0, 2);
-            lk = _dlt.Übertragungspunkte[felder[i][2]].LastÜ!;
-
-            rs = Werkzeuge.SubVektor(lk, 0, 2);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-            var gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-        }
-
-        // letztes Feld der Übertragung
-        if (_dlt.EndeFest)  // gilt fuer beide AnfangFest UND EndeFest und nur EndeFest
-        {
-            // eingespanntes Lager am Ende: we = phie = 0
-            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z!,
-                0, 1);
-            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ!;
-
-            rs = Werkzeuge.SubVektor(lk, 0, 1);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-            var gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-        }
-        else if (_dlt.AnfangFest)
-        {
-            // gelenkiges Lager am Ende: we = Me = 0
-            var matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z!, 0, 2);
-            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ!;
-
-            rs = Werkzeuge.SubVektor(lk, 0, 2);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-            var gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-        }
-
-        // '^' unary_expression is called the "index from end operator"
-        // Endvektor im letzten Feld, indexEnde = felder[^1].Count - 1;
-        var pEe = _dlt.Übertragungspunkte[felder[^1][^1]];
-        pEe.ZL = Werkzeuge.MatrixVectorMultiply(pEe.Z!, rs);
-        pEe.ZL = Werkzeuge.VectorVectorAdd(pEe.ZL!, pEe.LastÜ!);
-
-        // Anfangsvektor im letzten Feld
-        var pE0 = _dlt.Übertragungspunkte[felder[^1][0]];
-        var vektor4 = Werkzeuge.MatrixVectorMultiply(pE0.AnfangKopplung!, rs);
-        pE0.ZR = Werkzeuge.VectorVectorAdd(vektor4, pE0.Lk!);
-
-        // Zustandsvektor an Zwischenpunkten im letzten Feld
-        for (var index = 1; index < felder[^1].Count - 1; index++)
-        {
-            var pkE = _dlt.Übertragungspunkte[felder[^1][index]];
-            pkE.ZL = Werkzeuge.MatrixVectorMultiply(pkE.Z!, rs);
-            pkE.ZL = Werkzeuge.VectorVectorAdd(pkE.ZL!, pkE.LastÜ!);
-            // Gleichlast: kein neuer Lasteintrag am Ende
-            pkE.ZR = !(pkE.Lastlänge > 0) ? Werkzeuge.VectorVectorAdd(pkE.ZL, pkE.Last!) : pkE.ZL;
-        }
-
-        // erneute Übertragung über alle vorhergehenden Felder
-        for (var i = 0; i < felder.Count - 1; i++)
-        {
-            // Anfangsvektor im Feld
-            var vektor2 = new double[2];
-            // Kopplung: wc = 0, phic = z2L[3]
-            var p00 = _dlt.Übertragungspunkte[felder[i][0]];
-            p00.ZR = new double[4];
-            vektor2[0] = _dlt.Übertragungspunkte[felder[i + 1][0]].ZR![0] -
-                         _dlt.Übertragungspunkte[felder[i][^1]].LastÜ![0];
-            vektor2[1] = _dlt.Übertragungspunkte[felder[i + 1][0]].ZR![1] -
-                         _dlt.Übertragungspunkte[felder[i][^1]].LastÜ![1];
-            vektor2 = Werkzeuge.MatrixVectorMultiply(kk1Inv, vektor2);
-
-            // AnfangFest und BeideFest: Anfang M=vektor2[0]
-            if (_dlt.AnfangFest) p00.ZR![2] = vektor2[0];
-            // nur EndeFest: Anfang             phi=vektor2[0]
-            if (_dlt.EndeFest && !_dlt.AnfangFest) p00.ZR![1] = vektor2[0];
-            // in allen Fällen: Anfang          Q=vektor2[1]
-            p00.ZR![3] = vektor2[1];
-
-            // Zustandsvektor an Zwischenpunkten im Feld
-            for (var index = 1; index < felder[i].Count - 1; index++)
-            {
-                var piK = _dlt.Übertragungspunkte[felder[i][index]];
-                var piKm1 = _dlt.Übertragungspunkte[felder[i][index - 1]];
-
-                piK.ZL = Werkzeuge.MatrixVectorMultiply(piK.A!, piKm1.ZR!);
-                piK.ZR = Werkzeuge.VectorVectorAdd(piK.ZL!, piK.Last!);
-            }
-
-            // Endvektor im Feld
-            var pEm1 = _dlt.Übertragungspunkte[felder[i].Count - 1];
-            vektor2 = Werkzeuge.SubVektor(_dlt.Übertragungspunkte[felder[i][0]].ZR!, 2, 3);
-            pEm1.ZL = Werkzeuge.MatrixVectorMultiply(pEm1.Z!, vektor2);
-            pEm1.ZL = Werkzeuge.VectorVectorAdd(pEm1.ZL!, pEm1.LastÜ!);
-        }
-
-        _darstellung = new Darstellung(_dlt!, VisualErgebnisse);
-        _darstellung.FestlegungAuflösung();
-        _darstellung.TrägerDarstellen();
-        _darstellung.Momentenverlauf();
-        _darstellung.Querkraftverlauf();
-        _darstellung.TexteAnzeigen();
-    }
-
-    private void Einfeldträger()
-    {
-        var piA = _dlt?.Übertragungspunkte[0];
-        var piE = _dlt?.Übertragungspunkte[^1];
-
-        double[,] matrix;
-        Gleichungslöser gaussSolver;
-        if (_dlt!.AnfangFest && _dlt.EndeFest)
-        {
-            // Zustandsvektor zEnde{w,phi,M,Q}, fest w=0, phi=0
-            matrix = Werkzeuge.SubMatrix(piE?.Z!, 0, 1);
-            var rs = Werkzeuge.SubVektor(piE?.LastÜ!, 0, 1);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-
-            gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-            //zStart(Ma, Qa) = vektor
-            piA!.ZR![2] = rs[0];
-            piA.ZR![3] = rs[1];
-        }
-        else if (_dlt!.AnfangFest && !_dlt.EndeFest)
-        {
-            // Zustandsvektor zEnde{w,phi,M,Q}, gelenkig w=0, M=0
-            matrix = Werkzeuge.SubMatrix(piE?.Z!, 0, 2);
-            var rs = Werkzeuge.SubVektor(piE?.LastÜ!, 0, 2);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-
-            gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-            //zStart(Ma, Qa) = vektor
-            piA!.ZR![2] = rs[0];
-            piA.ZR![3] = rs[1];
-        }
-        else if (_dlt.EndeFest && !_dlt.AnfangFest)
-        {
-            // Zustandsvektor zEnde{w,phi,M,Q}, fest w=0, phi=0
-            matrix = Werkzeuge.SubMatrix(piE?.Z!, 0, 1);
-            var rs = Werkzeuge.SubVektor(piE?.LastÜ!, 0, 1);
-            rs[0] = -rs[0];
-            rs[1] = -rs[1];
-
-            gaussSolver = new Gleichungslöser(matrix, rs);
-            if (gaussSolver.Decompose()) gaussSolver.Solve();
-            //zStart(phia, Qa) = vektor
-            piA!.ZR![1] = rs[0];
-            piA.ZR![3] = rs[1];
-        }
-
-        // erneute Uebertragung des Zustandsvektors
-        for (var k = 1; k < _dlt?.Übertragungspunkte.Count; k++)
-        {
-            _dlt.Übertragungspunkte[k].ZL = Werkzeuge.MatrixVectorMultiply(
-                _dlt.Übertragungspunkte[k].A!, _dlt.Übertragungspunkte[k - 1].ZR!);
-            if (k == _dlt?.Übertragungspunkte.Count - 1) continue;
-            _dlt!.Übertragungspunkte[k].ZR = Werkzeuge.VectorVectorAdd(
-                _dlt.Übertragungspunkte[k].ZL!, _dlt.Übertragungspunkte[k].Last!);
-        }
-    }
-
     private void TexteAnzeigen(object sender, RoutedEventArgs e)
     {
         if (_texteAn)
         {
-            _darstellung!.TexteEntfernen();
+            Darstellung!.TexteEntfernen();
             _texteAn = false;
         }
         else
         {
-            _darstellung!.TexteAnzeigen();
+            Darstellung!.TexteAnzeigen();
             _texteAn = true;
         }
     }
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        //MyPopup.IsOpen = false;
         _hitList = new List<Shape>();
+        _hitTextBlock.Clear();
         var hitPoint = e.GetPosition(VisualErgebnisse);
-        _hitArea = new EllipseGeometry(hitPoint, 2.0, 2.0);
+        _hitArea = new EllipseGeometry(hitPoint, 5.0, 5.0);
         VisualTreeHelper.HitTest(VisualErgebnisse, null, HitTestCallBack,
             new GeometryHitTestParameters(_hitArea));
 
@@ -532,7 +242,7 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 punktlast.ShowDialog();
                 VisualErgebnisse.Children.Clear();
-                Neuberechnung();
+                _berechnung.Neuberechnung();
             }
 
             if (item.Name.Contains("Gleichlast"))
@@ -554,7 +264,7 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 gleichlast.ShowDialog();
                 VisualErgebnisse.Children.Clear();
-                Neuberechnung();
+                _berechnung.Neuberechnung();
             }
 
             if (!item.Name.Contains("Lager")) continue;
@@ -571,8 +281,29 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 lager.ShowDialog();
                 VisualErgebnisse.Children.Clear();
-                Neuberechnung();
+                _berechnung.Neuberechnung();
             }
+        }
+
+        // click auf Übertragungspunkt ID --> Eigenschaften eines Übertragungspunktes werden interaktiv verändert
+        MyPopup.IsOpen = false;
+
+        foreach (var item in _hitTextBlock)
+        {
+            var index = int.Parse(item.Text);
+            var punkt = _dlt!.Übertragungspunkte[index];
+            _neuerPunkt = new PunktNeu(_dlt)
+            {
+                //Topmost = true, Owner = (Window)Parent,
+                PunktId = { Text = item.Text },
+                Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) }
+            };
+            _mittelpunkt = new Point(punkt.Position * Darstellung!._auflösung + Darstellung._plazierungH,
+                                     Darstellung._plazierungV1);
+            Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
+            Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
+            VisualErgebnisse.Children.Add(Punkt);
+            Pilot = Punkt;
         }
     }
 
@@ -605,6 +336,9 @@ public partial class MainWindow
                     case Shape hit:
                         _hitList?.Add(hit);
                         break;
+                    case TextBlock hit:
+                        _hitTextBlock.Add(hit);
+                        break;
                 }
                 return HitTestResultBehavior.Continue;
             case IntersectionDetail.NotCalculated:
@@ -612,5 +346,46 @@ public partial class MainWindow
             default:
                 return HitTestResultBehavior.Stop;
         }
+    }
+
+    private void Punkt_MouseEnter(object sender, MouseEventArgs e)
+    {
+        Punkt.CaptureMouse();
+        _isDragging = true;
+        MyPopup.IsOpen = false;
+    }
+
+    private void Punkt_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDragging) return;
+        var canvPosToWindow = VisualErgebnisse.TransformToAncestor(this).Transform(new Point(0, 0));
+
+        if (sender is not Ellipse knoten) return;
+        var upperlimit = canvPosToWindow.Y + knoten.Height / 2;
+        var lowerlimit = canvPosToWindow.Y + VisualErgebnisse.ActualHeight - knoten.Height / 2;
+
+        var leftlimit = canvPosToWindow.X + knoten.Width / 2;
+        var rightlimit = canvPosToWindow.X + VisualErgebnisse.ActualWidth - knoten.Width / 2;
+
+
+        var absmouseXpos = e.GetPosition(this).X;
+        var absmouseYpos = e.GetPosition(this).Y;
+
+        if (!(absmouseXpos > leftlimit) || !(absmouseXpos < rightlimit)
+                                        || !(absmouseYpos > upperlimit) || !(absmouseYpos < lowerlimit)) return;
+
+        var mittelpunkt = new Point(e.GetPosition(VisualErgebnisse).X, e.GetPosition(VisualErgebnisse).Y);
+
+        Canvas.SetLeft(knoten, mittelpunkt.X - Punkt.Width / 2);
+        Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
+
+        var koordinate = Darstellung!.TransformBildPunkt(mittelpunkt);
+        _neuerPunkt!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
+    }
+
+    private void Punkt_RightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        Punkt.ReleaseMouseCapture();
+        _isDragging = false;
     }
 }
