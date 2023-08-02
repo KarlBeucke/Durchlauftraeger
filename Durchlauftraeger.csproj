@@ -11,9 +11,10 @@
   <ItemGroup>
     <None Remove="Ressourcen\Auflager verschieblich.jpg" />
     <None Remove="Ressourcen\Einspannung.jpg" />
+    <None Remove="Ressourcen\Ergebnistexte.jpg" />
     <None Remove="Ressourcen\Gleichlast.jpg" />
     <None Remove="Ressourcen\Punktlast.jpg" />
-    <None Remove="Ressourcen\Text.jpg" />
+    <None Remove="Ressourcen\UePunkte.jpg" />
     <None Remove="Ressourcen\Zustand.jpg" />
   </ItemGroup>
 
@@ -28,13 +29,16 @@
     <Resource Include="Ressourcen\Einspannung.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Ressourcen\Ergebnistexte.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Ressourcen\Gleichlast.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Ressourcen\Punktlast.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Ressourcen\Text.jpg">
+    <Resource Include="Ressourcen\UePunkte.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Ressourcen\Zustand.jpg">

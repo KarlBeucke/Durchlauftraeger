@@ -46,8 +46,8 @@ public partial class DialogPunktlast
             Lastwert = punktlast[3],
             Last = punktlast,
             LastÜ = new double[4],
-            ZL = new double[4],
-            ZR = new double[4],
+            Zl = new double[4],
+            Zr = new double[4],
             Lk = lk
         };
         _dlt?.Übertragungspunkte.Add(_übertragungsPunkt);

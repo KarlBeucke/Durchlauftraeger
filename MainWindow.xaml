@@ -45,11 +45,16 @@
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                         Margin="335,0,0,0" Background="LightGray"
+                        Click="ÜbertragungspunkteAnzeigen">
+                        <Image Source="Ressourcen/UePunkte.jpg" Height="25" Width="43"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="390,0,0,0" Background="LightGray"
                         Click="TexteAnzeigen">
-                        <Image Source="Ressourcen/Text.jpg" Height="25" Width="43"></Image>
+                        <Image Source="Ressourcen/Ergebnistexte.jpg" Height="25" Width="43"></Image>
                 </Button>
             </Grid>
-            <Canvas x:Name="VisualErgebnisse" Height="395" Width="763" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+            <Canvas x:Name="DltVisuell" Height="395" Width="763" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     MouseLeftButtonDown="OnMouseLeftButtonDown"
                     MouseRightButtonDown="OnMouseRightButtonDown">
                 <Popup x:Name="MyPopup" Placement="MousePoint">

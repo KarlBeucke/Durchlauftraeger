@@ -4,13 +4,13 @@ public partial class PunktNeu
 {
     private readonly Modell? _dlt;
     private readonly Berechnung? _berechnung;
-    public PunktNeu(Modell? dlt)
+    public PunktNeu(Modell? dlt, Berechnung berechnung)
     {
         InitializeComponent();
         _dlt = dlt;
         // aktiviere Ereignishandler für Canvas
-        MainWindow._dltVisual!.Background = System.Windows.Media.Brushes.Transparent;
-        _berechnung = new Berechnung(_dlt!, MainWindow._dltVisual, MainWindow.Darstellung!);
+        MainWindow.DltVisual!.Background = System.Windows.Media.Brushes.Transparent;
+        _berechnung = berechnung;
         Show();
     }
 
@@ -20,8 +20,8 @@ public partial class PunktNeu
         if (Position.Text.Length > 0) _dlt!.Übertragungspunkte[punktId].Position = double.Parse(Position.Text);
 
         // entferne Steuerungsknoten und deaktiviere Ereignishandler für Canvas
-        MainWindow._dltVisual!.Children.Remove(MainWindow.Pilot);
-        MainWindow._dltVisual.Background = null;
+        MainWindow.DltVisual!.Children.Remove(MainWindow.Pilot);
+        MainWindow.DltVisual.Background = null;
         _berechnung?.Neuberechnung();
         Close();
     }
@@ -29,8 +29,8 @@ public partial class PunktNeu
     private void BtnDialogCancel_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         // entferne Steuerungsknoten und deaktiviere Ereignishandler für Canvas
-        MainWindow._dltVisual!.Children.Remove(MainWindow.Pilot);
-        MainWindow._dltVisual.Background = null;
+        MainWindow.DltVisual!.Children.Remove(MainWindow.Pilot);
+        MainWindow.DltVisual.Background = null;
         Close();
     }
 }

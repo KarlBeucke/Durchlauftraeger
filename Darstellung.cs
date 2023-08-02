@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation.Text;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -12,15 +13,17 @@ namespace Durchlauftraeger;
 public class Darstellung
 {
     private readonly Modell _dlt;
-    private readonly Canvas _visual;
+    public readonly Canvas _visual;
     private double _screenV, _screenH;
-    public double _auflösung;
+    public double Auflösung;
     private double _maxX;
     private const int RandLinks = 60;
-    public double _plazierungV1, _plazierungV2, _plazierungV3;
-    public double _plazierungH;
+    public double PlazierungV1;
+    private double _plazierungV2, _plazierungV3;
+    public double PlazierungH;
     private int _endIndex;
     private int _momentenAuflösung;
+    private List<object> ÜPunkte { get; }
     private List<object> Texte { get; }
     public List<object> KnotenIDs { get; }
 
@@ -28,6 +31,7 @@ public class Darstellung
     {
         _dlt = dlt;
         _visual = visual;
+        ÜPunkte = new List<object>();
         Texte = new List<object>();
         KnotenIDs = new List<object>();
     }
@@ -36,12 +40,12 @@ public class Darstellung
         _screenH = _visual.ActualWidth;
         _screenV = _visual.ActualHeight;
 
-        _maxX = double.Parse(MainWindow._neuerTräger!.Gesamtlänge.Text);
+        _maxX = double.Parse(MainWindow.Träger!.Gesamtlänge.Text);
 
-        _auflösung = (_screenH - 2 * RandLinks) / _maxX;
-        _plazierungH = RandLinks;
+        Auflösung = (_screenH - 2 * RandLinks) / _maxX;
+        PlazierungH = RandLinks;
 
-        _plazierungV1 = (int)(0.2 * _screenV);
+        PlazierungV1 = (int)(0.2 * _screenV);
         _plazierungV2 = (int)(0.5 * _screenV);
         _plazierungV3 = (int)(0.8 * _screenV);
     }
@@ -51,7 +55,7 @@ public class Darstellung
         var pathGeometry = new PathGeometry();
         var startPunkt = new Point(0, 0);
         var pathFigure = new PathFigure { StartPoint = startPunkt };
-        var endPunkt = new Point(_dlt.Trägerlänge * _auflösung, 0);
+        var endPunkt = new Point(_dlt.Trägerlänge * Auflösung, 0);
         pathFigure.Segments.Add(new LineSegment(endPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -61,53 +65,53 @@ public class Darstellung
             StrokeThickness = 3,
             Data = pathGeometry
         };
-        Canvas.SetLeft(trägerPath, _plazierungH);
-        Canvas.SetTop(trägerPath, _plazierungV1);
+        Canvas.SetLeft(trägerPath, PlazierungH);
+        Canvas.SetTop(trägerPath, PlazierungV1);
         _visual.Children.Add(trägerPath);
 
-        ÜbertragungspunkteZeichnen();
-        ÜbertragungspunkteIDs();
+        ÜbertragungspunkteAnzeigen();
         LagerZeichnen();
         if (MainWindow.KeineLast == false) LastenZeichnen();
     }
-    private void ÜbertragungspunkteZeichnen()
-    {
-        // Übertragungspunkte werden als EllipseGeometry der GeometryGroup tragwerk hinzugefügt
-        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
-        {
-            var name = "Übertragungspunkt" + i;
-            var punkt = new Point(_dlt.Übertragungspunkte[i].Position * _auflösung, 0);
-            var übertragung = new EllipseGeometry(punkt, 5, 5);
+    //public void ÜbertragungspunkteZeichnen()
+    //{
+    //    // Übertragungspunkte werden als EllipseGeometry der GeometryGroup tragwerk hinzugefügt
+    //    for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+    //    {
+    //        var name = "Übertragungspunkt" + i;
+    //        var punkt = new Point(_dlt.Übertragungspunkte[i].Position * Auflösung, 0);
+    //        var übertragung = new EllipseGeometry(punkt, 5, 5);
 
-            // Übertragungspunkte werden gezeichnet
-            Shape tragwerkPath = new Path()
-            {
-                Name = name,
-                Stroke = Blue,
-                StrokeThickness = 1,
-                Data = übertragung
-            };
-            _visual.Children.Add(tragwerkPath);
-            Canvas.SetLeft(tragwerkPath, _plazierungH);
-            Canvas.SetTop(tragwerkPath, _plazierungV1);
-        }
-    }
-    private void ÜbertragungspunkteIDs()
-    {
-        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
-        {
-            var id = new TextBlock
-            {
-                FontSize = 12,
-                Text = i.ToString(),
-                Foreground = Black
-            };
-            Canvas.SetTop(id, _plazierungV1);
-            Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * _auflösung + _plazierungH + 5);
-            _visual.Children.Add(id);
-            KnotenIDs.Add(id);
-        }
-    }
+    //        // Übertragungspunkte werden gezeichnet
+    //        Shape üPunktSymbol = new Path()
+    //        {
+    //            Name = name,
+    //            Stroke = Blue,
+    //            StrokeThickness = 1,
+    //            Data = übertragung
+    //        };
+    //        _visual.Children.Add(üPunktSymbol);
+    //        Canvas.SetLeft(üPunktSymbol, PlazierungH);
+    //        Canvas.SetTop(üPunktSymbol, PlazierungV1);
+    //        ÜPunkte.Add(üPunktSymbol);
+    //    }
+    //}
+    //public void ÜbertragungspunkteIDs()
+    //{
+    //    for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+    //    {
+    //        var id = new TextBlock
+    //        {
+    //            FontSize = 12,
+    //            Text = i.ToString(),
+    //            Foreground = Black
+    //        };
+    //        Canvas.SetTop(id, PlazierungV1);
+    //        Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
+    //        _visual.Children.Add(id);
+    //        KnotenIDs.Add(id);
+    //    }
+    //}
     private void LagerZeichnen()
     {
         PathGeometry pathGeometry;
@@ -117,7 +121,7 @@ public class Darstellung
         if (_dlt.AnfangFest)
         {
             pathGeometry = DreiFesthaltungenZeichnen(lagerKnoten);
-            var drehPunkt = TransformPunkt(lagerKnoten, _auflösung);
+            var drehPunkt = TransformPunkt(lagerKnoten, Auflösung);
             pathGeometry.Transform = new RotateTransform(90, drehPunkt.X, drehPunkt.Y);
         }
         else
@@ -133,8 +137,8 @@ public class Darstellung
         };
 
         // setz oben/links Position zum Zeichnen auf dem Canvas
-        Canvas.SetLeft(path, _plazierungH);
-        Canvas.SetTop(path, _plazierungV1);
+        Canvas.SetLeft(path, PlazierungH);
+        Canvas.SetTop(path, PlazierungV1);
         // zeichne Shape
         _visual.Children.Add(path);
 
@@ -144,7 +148,7 @@ public class Darstellung
         if (_dlt.EndeFest)
         {
             pathGeometry = DreiFesthaltungenZeichnen(lagerKnoten);
-            var drehPunkt = TransformPunkt(lagerKnoten, _auflösung);
+            var drehPunkt = TransformPunkt(lagerKnoten, Auflösung);
             pathGeometry.Transform = new RotateTransform(-90, drehPunkt.X, drehPunkt.Y);
         }
         else
@@ -160,8 +164,8 @@ public class Darstellung
         };
 
         // setz oben/links Position zum Zeichnen auf dem Canvas
-        Canvas.SetLeft(path, _plazierungH);
-        Canvas.SetTop(path, _plazierungV1);
+        Canvas.SetLeft(path, PlazierungH);
+        Canvas.SetTop(path, PlazierungV1);
         // zeichne Shape
         _visual.Children.Add(path);
 
@@ -181,8 +185,8 @@ public class Darstellung
             };
 
             // setz oben/links Position zum Zeichnen auf dem Canvas
-            Canvas.SetLeft(path, _plazierungH);
-            Canvas.SetTop(path, _plazierungV1);
+            Canvas.SetLeft(path, PlazierungH);
+            Canvas.SetTop(path, PlazierungV1);
             // zeichne Shape
             _visual.Children.Add(path);
         }
@@ -193,7 +197,7 @@ public class Darstellung
         var pathFigure = new PathFigure();
         const int lagerSymbol = 20;
 
-        var startPoint = TransformPunkt(lagerKnoten, _auflösung);
+        var startPoint = TransformPunkt(lagerKnoten, Auflösung);
         pathFigure.StartPoint = startPoint;
 
         var endPoint = new Point(startPoint.X - lagerSymbol, startPoint.Y + lagerSymbol);
@@ -210,48 +214,48 @@ public class Darstellung
         pathGeometry.Figures.Add(pathFigure);
         return pathGeometry;
     }
-    private PathGeometry ZweiFesthaltungenZeichnen(Übertragungspunkt lagerKnoten)
-    {
-        var pathGeometry = new PathGeometry();
-        var pathFigure = new PathFigure();
-        const int lagerSymbol = 20;
+    //private PathGeometry ZweiFesthaltungenZeichnen(Übertragungspunkt lagerKnoten)
+    //{
+    //    var pathGeometry = new PathGeometry();
+    //    var pathFigure = new PathFigure();
+    //    const int lagerSymbol = 20;
 
-        var startPoint = TransformPunkt(lagerKnoten, _auflösung);
-        pathFigure.StartPoint = startPoint;
+    //    var startPoint = TransformPunkt(lagerKnoten, Auflösung);
+    //    pathFigure.StartPoint = startPoint;
 
-        var endPoint = new Point(startPoint.X - lagerSymbol, startPoint.Y + lagerSymbol);
-        pathFigure.Segments.Add(new LineSegment(endPoint, true));
-        endPoint = new Point(endPoint.X + 2 * lagerSymbol, startPoint.Y + lagerSymbol);
-        pathFigure.Segments.Add(new LineSegment(endPoint, true));
-        pathFigure.Segments.Add(new LineSegment(startPoint, true));
+    //    var endPoint = new Point(startPoint.X - lagerSymbol, startPoint.Y + lagerSymbol);
+    //    pathFigure.Segments.Add(new LineSegment(endPoint, true));
+    //    endPoint = new Point(endPoint.X + 2 * lagerSymbol, startPoint.Y + lagerSymbol);
+    //    pathFigure.Segments.Add(new LineSegment(endPoint, true));
+    //    pathFigure.Segments.Add(new LineSegment(startPoint, true));
 
-        startPoint = endPoint;
-        pathFigure.Segments.Add(new LineSegment(startPoint, false));
-        endPoint = new Point(startPoint.X - 5, startPoint.Y + 5);
-        pathFigure.Segments.Add(new LineSegment(endPoint, true));
+    //    startPoint = endPoint;
+    //    pathFigure.Segments.Add(new LineSegment(startPoint, false));
+    //    endPoint = new Point(startPoint.X - 5, startPoint.Y + 5);
+    //    pathFigure.Segments.Add(new LineSegment(endPoint, true));
 
-        pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 10, startPoint.Y), false));
-        pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 10, endPoint.Y), true));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 10, startPoint.Y), false));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 10, endPoint.Y), true));
 
-        pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 20, startPoint.Y), false));
-        pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 20, endPoint.Y), true));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 20, startPoint.Y), false));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 20, endPoint.Y), true));
 
-        pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 30, startPoint.Y), false));
-        pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 30, endPoint.Y), true));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 30, startPoint.Y), false));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 30, endPoint.Y), true));
 
-        pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 40, startPoint.Y), false));
-        pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 40, endPoint.Y), true));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(startPoint.X - 40, startPoint.Y), false));
+    //    pathFigure.Segments.Add(new LineSegment(new Point(endPoint.X - 40, endPoint.Y), true));
 
-        pathGeometry.Figures.Add(pathFigure);
-        return pathGeometry;
-    }
+    //    pathGeometry.Figures.Add(pathFigure);
+    //    return pathGeometry;
+    //}
     private PathGeometry DreiFesthaltungenZeichnen(Übertragungspunkt lagerKnoten)
     {
         var pathGeometry = new PathGeometry();
         var pathFigure = new PathFigure();
         const int lagerSymbol = 20;
 
-        var startPoint = TransformPunkt(lagerKnoten, _auflösung);
+        var startPoint = TransformPunkt(lagerKnoten, Auflösung);
 
         startPoint = new Point(startPoint.X - lagerSymbol, startPoint.Y);
         pathFigure.StartPoint = startPoint;
@@ -302,10 +306,10 @@ public class Darstellung
 
                 const int lastPfeilGroesse = 10;
                 var lastWert = lastPunkt.Lastwert;
-                var endPoint = new Point(lastPunkt.Position * _auflösung, lastWert * lastAuflösung);
+                var endPoint = new Point(lastPunkt.Position * Auflösung, lastWert * lastAuflösung);
                 pathFigure.StartPoint = endPoint;
 
-                var startPoint = TransformPunkt(lastPunkt, _auflösung);
+                var startPoint = TransformPunkt(lastPunkt, Auflösung);
                 pathFigure.Segments.Add(new LineSegment(startPoint, true));
 
                 var vector = startPoint - endPoint;
@@ -330,8 +334,8 @@ public class Darstellung
                 };
 
                 // setz oben/links Position zum Zeichnen auf dem Canvas
-                Canvas.SetLeft(path, _plazierungH);
-                Canvas.SetTop(path, _plazierungV1);
+                Canvas.SetLeft(path, PlazierungH);
+                Canvas.SetTop(path, PlazierungV1);
                 // zeichne Shape
                 _visual.Children.Add(path);
             }
@@ -346,8 +350,8 @@ public class Darstellung
 
                 var lastWert = -lastPunkt.Lastwert;
                 var lastStart = _dlt.Übertragungspunkte[index - 1];
-                var startPunkt = new Point(lastStart.Position * _auflösung, 0);
-                var endPunkt = new Point(lastPunkt.Position * _auflösung, 0);
+                var startPunkt = new Point(lastStart.Position * Auflösung, 0);
+                var endPunkt = new Point(lastPunkt.Position * Auflösung, 0);
 
                 var vector = endPunkt - startPunkt;
 
@@ -412,8 +416,8 @@ public class Darstellung
                 };
 
                 // setz oben/links Position zum Zeichnen auf dem Canvas
-                Canvas.SetLeft(path, _plazierungH);
-                Canvas.SetTop(path, _plazierungV1);
+                Canvas.SetLeft(path, PlazierungH);
+                Canvas.SetTop(path, PlazierungV1);
                 // zeichne Shape
                 _visual.Children.Add(path);
             }
@@ -425,7 +429,7 @@ public class Darstellung
         var pathGeometry = new PathGeometry();
         var startPunkt = new Point(0, 0);
         var pathFigure = new PathFigure { StartPoint = startPunkt };
-        var endPunkt = new Point(_dlt.Trägerlänge * _auflösung, 0);
+        var endPunkt = new Point(_dlt.Trägerlänge * Auflösung, 0);
         pathFigure.Segments.Add(new LineSegment(endPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -435,12 +439,12 @@ public class Darstellung
             StrokeThickness = 1,
             Data = pathGeometry
         };
-        Canvas.SetLeft(trägerPath, _plazierungH);
+        Canvas.SetLeft(trägerPath, PlazierungH);
         Canvas.SetTop(trägerPath, _plazierungV2);
         _visual.Children.Add(trägerPath);
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
-        var momentenWert = _dlt.Übertragungspunkte[0].ZR![2];
+        var momentenWert = _dlt.Übertragungspunkte[0].Zr![2];
         _momentenAuflösung = 2;
         var nextPunkt = new Point(0, momentenWert * _momentenAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
@@ -454,20 +458,20 @@ public class Darstellung
 
             if (pi.Lastlänge < double.Epsilon)
             {
-                nextPunkt = new Point(pi.Position * _auflösung, pi.ZL![2] * _momentenAuflösung);
+                nextPunkt = new Point(pi.Position * Auflösung, pi.Zl![2] * _momentenAuflösung);
                 pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             }
             else
             {
-                var abstandMax = pim1.ZR![3] / pi.Lastwert;
+                var abstandMax = pim1.Zr![3] / pi.Lastwert;
                 Point maxPunkt, kontrollPunkt;
                 double mMax;
                 if (abstandMax > pi.Lastlänge)
                 {
                     // MomentenMaxpunkt liegt hinter Übertragungspunkt
-                    mMax = pi.ZL![2];
-                    maxPunkt = new Point(pi.Position * _auflösung, mMax * _momentenAuflösung);
-                    var vec = new Point((_dlt.Übertragungspunkte[index + 1].Position) * _auflösung, pi.ZL![2] * _momentenAuflösung) - maxPunkt;
+                    mMax = pi.Zl![2];
+                    maxPunkt = new Point(pi.Position * Auflösung, mMax * _momentenAuflösung);
+                    var vec = new Point((_dlt.Übertragungspunkte[index + 1].Position) * Auflösung, pi.Zl![2] * _momentenAuflösung) - maxPunkt;
                     RotateVectorScreen(vec, 90);
                     vec.Normalize();
                     kontrollPunkt = maxPunkt - vec * 50;
@@ -475,16 +479,16 @@ public class Darstellung
                 else
                 {
                     // MomentenMaxpunkt liegt vor Übertragungspunkt
-                    mMax = pim1.ZR![2] + pim1.ZR![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+                    mMax = pim1.Zr![2] + pim1.Zr![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
 
                     // maxPunkt mit Kontrollpunkt für quadratischen Bezier-Spline
-                    maxPunkt = new Point((pim1.Position + abstandMax) * _auflösung, mMax * _momentenAuflösung);
-                    var vec = new Point((_dlt.Übertragungspunkte[index].Position) * _auflösung, pi.ZL![2] * _momentenAuflösung) - maxPunkt;
+                    maxPunkt = new Point((pim1.Position + abstandMax) * Auflösung, mMax * _momentenAuflösung);
+                    var vec = new Point((_dlt.Übertragungspunkte[index].Position) * Auflösung, pi.Zl![2] * _momentenAuflösung) - maxPunkt;
                     RotateVectorScreen(vec, 90);
                     vec.Normalize();
                     kontrollPunkt = maxPunkt - vec * 50;
                 }
-                nextPunkt = new Point(pi.Position * _auflösung, pi.ZL![2] * _momentenAuflösung);
+                nextPunkt = new Point(pi.Position * Auflösung, pi.Zl![2] * _momentenAuflösung);
                 pathFigure.Segments.Add(new QuadraticBezierSegment(kontrollPunkt, nextPunkt, true));
             }
             pathGeometry.Figures.Add(pathFigure);
@@ -498,7 +502,7 @@ public class Darstellung
             StrokeThickness = 1,
             Data = pathGeometry
         };
-        Canvas.SetLeft(momentenPath, _plazierungH);
+        Canvas.SetLeft(momentenPath, PlazierungH);
         Canvas.SetTop(momentenPath, _plazierungV2);
         _visual.Children.Add(momentenPath);
     }
@@ -508,7 +512,7 @@ public class Darstellung
         var pathGeometry = new PathGeometry();
         var startPunkt = new Point(0, 0);
         var pathFigure = new PathFigure { StartPoint = startPunkt };
-        var endPunkt = new Point(_dlt.Trägerlänge * _auflösung, 0);
+        var endPunkt = new Point(_dlt.Trägerlänge * Auflösung, 0);
         pathFigure.Segments.Add(new LineSegment(endPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -518,12 +522,12 @@ public class Darstellung
             StrokeThickness = 1,
             Data = pathGeometry
         };
-        Canvas.SetLeft(trägerPath, _plazierungH);
+        Canvas.SetLeft(trägerPath, PlazierungH);
         Canvas.SetTop(trägerPath, _plazierungV3);
         _visual.Children.Add(trägerPath);
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
-        var querkraftWert = _dlt.Übertragungspunkte[0].ZR![3];
+        var querkraftWert = _dlt.Übertragungspunkte[0].Zr![3];
         var querkraftAuflösung = 2;
         var nextPunkt = new Point(0, querkraftWert * querkraftAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
@@ -532,19 +536,19 @@ public class Darstellung
         _endIndex = _dlt.Übertragungspunkte.Count;
         for (var index = 1; index < _endIndex - 1; index++)
         {
-            nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * _auflösung,
-                _dlt.Übertragungspunkte[index].ZL![3] * querkraftAuflösung);
+            nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung,
+                _dlt.Übertragungspunkte[index].Zl![3] * querkraftAuflösung);
             pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             pathGeometry.Figures.Add(pathFigure);
 
-            nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * _auflösung,
-                _dlt.Übertragungspunkte[index].ZR![3] * querkraftAuflösung);
+            nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung,
+                _dlt.Übertragungspunkte[index].Zr![3] * querkraftAuflösung);
             pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             pathGeometry.Figures.Add(pathFigure);
         }
 
-        nextPunkt = new Point(_dlt.Übertragungspunkte[_endIndex - 1].Position * _auflösung,
-            _dlt.Übertragungspunkte[_endIndex - 1].ZL![3] * querkraftAuflösung);
+        nextPunkt = new Point(_dlt.Übertragungspunkte[_endIndex - 1].Position * Auflösung,
+            _dlt.Übertragungspunkte[_endIndex - 1].Zl![3] * querkraftAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -557,7 +561,7 @@ public class Darstellung
             StrokeThickness = 1,
             Data = pathGeometry
         };
-        Canvas.SetLeft(momentenPath, _plazierungH);
+        Canvas.SetLeft(momentenPath, PlazierungH);
         Canvas.SetTop(momentenPath, _plazierungV3);
         _visual.Children.Add(momentenPath);
     }
@@ -568,9 +572,9 @@ public class Darstellung
         _endIndex = _dlt.Übertragungspunkte.Count - 1;
 
         // Momententexte
-        var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * _auflösung + offset,
-            _dlt.Übertragungspunkte[0].ZR![2] * _momentenAuflösung + offset);
-        var mText = _dlt.Übertragungspunkte[0].ZR![2];
+        var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[0].Zr![2] * _momentenAuflösung + offset);
+        var mText = _dlt.Übertragungspunkte[0].Zr![2];
         var schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -578,15 +582,15 @@ public class Darstellung
             Foreground = Blue
         };
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
         Texte.Add(schnittgrößenText);
 
         for (var index = 1; index < _endIndex; index++)
         {
-            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * _auflösung + offset,
-                _dlt.Übertragungspunkte[index].ZL![2] * _momentenAuflösung + offset);
-            mText = _dlt.Übertragungspunkte[index].ZL![2];
+            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
+                _dlt.Übertragungspunkte[index].Zl![2] * _momentenAuflösung + offset);
+            mText = _dlt.Übertragungspunkte[index].Zl![2];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -594,7 +598,7 @@ public class Darstellung
                 Foreground = Blue
             };
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-            Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
             Texte.Add(schnittgrößenText);
 
@@ -602,9 +606,9 @@ public class Darstellung
             var pi = _dlt.Übertragungspunkte[index];
             var pim1 = _dlt.Übertragungspunkte[index - 1];
             if (!(pi.Lastlänge > double.Epsilon)) continue;
-            var abstandMax = pim1.ZR![3] / pi.Lastwert;
-            var mMax = pim1.ZR![2] + pim1.ZR![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
-            textPunkt = new Point((pim1.Position + abstandMax) * _auflösung - 5, mMax * _momentenAuflösung);
+            var abstandMax = pim1.Zr![3] / pi.Lastwert;
+            var mMax = pim1.Zr![2] + pim1.Zr![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+            textPunkt = new Point((pim1.Position + abstandMax) * Auflösung - 5, mMax * _momentenAuflösung);
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -612,14 +616,14 @@ public class Darstellung
                 Foreground = Red
             };
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-            Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
             Texte.Add(schnittgrößenText);
         }
 
-        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * _auflösung + offset,
-            _dlt.Übertragungspunkte[_endIndex].ZL![2] * _momentenAuflösung + offset);
-        mText = _dlt.Übertragungspunkte[_endIndex].ZL![2];
+        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[_endIndex].Zl![2] * _momentenAuflösung + offset);
+        mText = _dlt.Übertragungspunkte[_endIndex].Zl![2];
         schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -627,15 +631,15 @@ public class Darstellung
             Foreground = Blue
         };
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
         Texte.Add(schnittgrößenText);
 
 
         // Querkrafttexte
-        textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * _auflösung + offset,
-            _dlt.Übertragungspunkte[0].ZR![3] * _momentenAuflösung + offset);
-        var qText = _dlt.Übertragungspunkte[0].ZR![3];
+        textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[0].Zr![3] * _momentenAuflösung + offset);
+        var qText = _dlt.Übertragungspunkte[0].Zr![3];
         schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -643,15 +647,15 @@ public class Darstellung
             Foreground = Blue
         };
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
         Texte.Add(schnittgrößenText);
 
         for (var index = 1; index < _endIndex; index++)
         {
-            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * _auflösung - offset,
-                _dlt.Übertragungspunkte[index].ZL![3] * _momentenAuflösung + offset);
-            qText = _dlt.Übertragungspunkte[index].ZL![3];
+            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung - offset,
+                _dlt.Übertragungspunkte[index].Zl![3] * _momentenAuflösung + offset);
+            qText = _dlt.Übertragungspunkte[index].Zl![3];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -659,13 +663,13 @@ public class Darstellung
                 Foreground = Blue
             };
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
-            Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
             Texte.Add(schnittgrößenText);
 
-            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * _auflösung + offset,
-                _dlt.Übertragungspunkte[index].ZR![3] * _momentenAuflösung + offset);
-            qText = _dlt.Übertragungspunkte[index].ZR![3];
+            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
+                _dlt.Übertragungspunkte[index].Zr![3] * _momentenAuflösung + offset);
+            qText = _dlt.Übertragungspunkte[index].Zr![3];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -673,14 +677,14 @@ public class Darstellung
                 Foreground = Blue
             };
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
-            Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
             Texte.Add(schnittgrößenText);
         }
 
-        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * _auflösung + offset,
-            _dlt.Übertragungspunkte[_endIndex].ZL![3] * _momentenAuflösung + offset);
-        qText = _dlt.Übertragungspunkte[_endIndex].ZL![3];
+        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[_endIndex].Zl![3] * _momentenAuflösung + offset);
+        qText = _dlt.Übertragungspunkte[_endIndex].Zl![3];
         schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -688,7 +692,7 @@ public class Darstellung
             Foreground = Blue
         };
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + _plazierungH);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
         Texte.Add(schnittgrößenText);
     }
@@ -697,6 +701,49 @@ public class Darstellung
     {
         foreach (TextBlock schnittgrößenText in Texte.Cast<TextBlock>()) { _visual.Children.Remove(schnittgrößenText); }
     }
+
+    public void ÜbertragungspunkteAnzeigen()
+    {
+        // Übertragungspunkte werden als EllipseGeometry hinzugefügt
+        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+        {
+            var name = "Übertragungspunkt" + i;
+            var punkt = new Point(_dlt.Übertragungspunkte[i].Position * Auflösung, 0);
+            var übertragung = new EllipseGeometry(punkt, 5, 5);
+
+            // Übertragungspunkte werden gezeichnet
+            Shape üPunktSymbol = new Path()
+            {
+                Name = name,
+                Stroke = Blue,
+                StrokeThickness = 1,
+                Data = übertragung
+            };
+            _visual.Children.Add(üPunktSymbol);
+            Canvas.SetLeft(üPunktSymbol, PlazierungH);
+            Canvas.SetTop(üPunktSymbol, PlazierungV1);
+            ÜPunkte.Add(üPunktSymbol);
+
+            var id = new TextBlock
+            {
+                FontSize = 12,
+                Text = i.ToString(),
+                Foreground = Black
+            };
+            Canvas.SetTop(id, PlazierungV1);
+            Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
+            _visual.Children.Add(id);
+            KnotenIDs.Add(id);
+        } 
+    }
+    public void ÜbertragungspunkteEntfernen()
+    {
+        foreach (TextBlock id in KnotenIDs.Cast<TextBlock>()) { _visual.Children.Remove(id); }
+        KnotenIDs.Clear();
+        foreach (Shape üPunktSymbol in ÜPunkte) { _visual.Children.Remove(üPunktSymbol); }
+        ÜPunkte.Clear();
+    }
+
     private static Point TransformPunkt(Übertragungspunkt knoten, double auflösung)
     {
         return new Point(knoten.Position * auflösung, 0);
@@ -712,8 +759,8 @@ public class Darstellung
     public double[] TransformBildPunkt(Point point)
     {
         var koordinaten = new double[2];
-        koordinaten[0] = (point.X - _plazierungH) / _auflösung;
-        koordinaten[1] = (-point.Y + _plazierungV1) / _auflösung;
+        koordinaten[0] = (point.X - PlazierungH) / Auflösung;
+        koordinaten[1] = (-point.Y + PlazierungV1) / Auflösung;
         return koordinaten;
     }
 }

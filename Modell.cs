@@ -35,11 +35,11 @@ public class Übertragungspunkt
     public short Typ { get; set; }
     public double Lastwert { get; set; }
     public double Lastlänge { get; set; }
-    public double[]? ZL { get; set; }
+    public double[]? Zl { get; set; }
     public double[,]? A { get; set; }
     public double[,]? Z { get; set; }
     public double[,]? AnfangKopplung { get; set; }
-    public double[]? ZR { get; set; }
+    public double[]? Zr { get; set; }
     public double[]? Last { get; set; }
     public double[]? LastÜ { get; set; }
     public double[]? Lk { get; set; }

@@ -8,14 +8,14 @@ namespace Durchlauftraeger;
 public class Berechnung
 {
     private readonly Modell? _dlt;
-    private static Canvas? _visual;
+    private static Canvas? _dltVisuell;
     private readonly Darstellung _darstellung;
 
-    public Berechnung(Modell dlt, Canvas visual, Darstellung darstellung)
+    public Berechnung(Modell dlt, Darstellung darstellung, Canvas dltVisuell)
     {
         _dlt = dlt;
-        _visual = visual;
         _darstellung = darstellung;
+        _dltVisuell = dltVisuell;
     }
     public void Neuberechnung()
     {
@@ -43,14 +43,13 @@ public class Berechnung
 
         if (KeineLast)
         {
-            Darstellung nurTräger = new(_dlt, visual: _visual!);
-            nurTräger.FestlegungAuflösung();
-
-            nurTräger.TrägerDarstellen();
+            _dltVisuell!.Children.Clear();
+            _darstellung.FestlegungAuflösung();
+            _darstellung.TrägerDarstellen();
             return;
         }
 
-        _visual!.Children.Clear();
+        _dltVisuell!.Children.Clear();
 
         for (var i = 0; i < felder.Count; i++)
         {
@@ -118,7 +117,7 @@ public class Berechnung
             if (felder.Count == 1)
             {
                 Einfeldträger();
-                _darstellung.TrägerDarstellen();
+                _darstellung!.TrägerDarstellen();
                 _darstellung.Momentenverlauf();
                 _darstellung.Querkraftverlauf();
                 _darstellung.TexteAnzeigen();
@@ -190,22 +189,22 @@ public class Berechnung
         // '^' unary_expression is called the "index from end operator"
         // Endvektor im letzten Feld, indexEnde = felder[^1].Count - 1;
         var pEe = _dlt.Übertragungspunkte[felder[^1][^1]];
-        pEe.ZL = Werkzeuge.MatrixVectorMultiply(pEe.Z!, rs);
-        pEe.ZL = Werkzeuge.VectorVectorAdd(pEe.ZL!, pEe.LastÜ!);
+        pEe.Zl = Werkzeuge.MatrixVectorMultiply(pEe.Z!, rs);
+        pEe.Zl = Werkzeuge.VectorVectorAdd(pEe.Zl!, pEe.LastÜ!);
 
         // Anfangsvektor im letzten Feld
         var pE0 = _dlt.Übertragungspunkte[felder[^1][0]];
         var vektor4 = Werkzeuge.MatrixVectorMultiply(pE0.AnfangKopplung!, rs);
-        pE0.ZR = Werkzeuge.VectorVectorAdd(vektor4, pE0.Lk!);
+        pE0.Zr = Werkzeuge.VectorVectorAdd(vektor4, pE0.Lk!);
 
         // Zustandsvektor an Zwischenpunkten im letzten Feld
         for (var index = 1; index < felder[^1].Count - 1; index++)
         {
             var pkE = _dlt.Übertragungspunkte[felder[^1][index]];
-            pkE.ZL = Werkzeuge.MatrixVectorMultiply(pkE.Z!, rs);
-            pkE.ZL = Werkzeuge.VectorVectorAdd(pkE.ZL!, pkE.LastÜ!);
+            pkE.Zl = Werkzeuge.MatrixVectorMultiply(pkE.Z!, rs);
+            pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl!, pkE.LastÜ!);
             // Gleichlast: kein neuer Lasteintrag am Ende
-            pkE.ZR = !(pkE.Lastlänge > 0) ? Werkzeuge.VectorVectorAdd(pkE.ZL, pkE.Last!) : pkE.ZL;
+            pkE.Zr = !(pkE.Lastlänge > 0) ? Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Last!) : pkE.Zl;
         }
 
         // erneute Übertragung über alle vorhergehenden Felder
@@ -215,19 +214,19 @@ public class Berechnung
             var vektor2 = new double[2];
             // Kopplung: wc = 0, phic = z2L[3]
             var p00 = _dlt.Übertragungspunkte[felder[i][0]];
-            p00.ZR = new double[4];
-            vektor2[0] = _dlt.Übertragungspunkte[felder[i + 1][0]].ZR![0] -
+            p00.Zr = new double[4];
+            vektor2[0] = _dlt.Übertragungspunkte[felder[i + 1][0]].Zr![0] -
                          _dlt.Übertragungspunkte[felder[i][^1]].LastÜ![0];
-            vektor2[1] = _dlt.Übertragungspunkte[felder[i + 1][0]].ZR![1] -
+            vektor2[1] = _dlt.Übertragungspunkte[felder[i + 1][0]].Zr![1] -
                          _dlt.Übertragungspunkte[felder[i][^1]].LastÜ![1];
             vektor2 = Werkzeuge.MatrixVectorMultiply(kk1Inv, vektor2);
 
             // AnfangFest und BeideFest: Anfang M=vektor2[0]
-            if (_dlt.AnfangFest) p00.ZR![2] = vektor2[0];
+            if (_dlt.AnfangFest) p00.Zr![2] = vektor2[0];
             // nur EndeFest: Anfang             phi=vektor2[0]
-            if (_dlt.EndeFest && !_dlt.AnfangFest) p00.ZR![1] = vektor2[0];
+            if (_dlt.EndeFest && !_dlt.AnfangFest) p00.Zr![1] = vektor2[0];
             // in allen Fällen: Anfang          Q=vektor2[1]
-            p00.ZR![3] = vektor2[1];
+            p00.Zr![3] = vektor2[1];
 
             // Zustandsvektor an Zwischenpunkten im Feld
             for (var index = 1; index < felder[i].Count - 1; index++)
@@ -235,18 +234,18 @@ public class Berechnung
                 var piK = _dlt.Übertragungspunkte[felder[i][index]];
                 var piKm1 = _dlt.Übertragungspunkte[felder[i][index - 1]];
 
-                piK.ZL = Werkzeuge.MatrixVectorMultiply(piK.A!, piKm1.ZR!);
-                piK.ZR = Werkzeuge.VectorVectorAdd(piK.ZL!, piK.Last!);
+                piK.Zl = Werkzeuge.MatrixVectorMultiply(piK.A!, piKm1.Zr!);
+                piK.Zr = Werkzeuge.VectorVectorAdd(piK.Zl!, piK.Last!);
             }
 
             // Endvektor im Feld
             var pEm1 = _dlt.Übertragungspunkte[felder[i].Count - 1];
-            vektor2 = Werkzeuge.SubVektor(_dlt.Übertragungspunkte[felder[i][0]].ZR!, 2, 3);
-            pEm1.ZL = Werkzeuge.MatrixVectorMultiply(pEm1.Z!, vektor2);
-            pEm1.ZL = Werkzeuge.VectorVectorAdd(pEm1.ZL!, pEm1.LastÜ!);
+            vektor2 = Werkzeuge.SubVektor(_dlt.Übertragungspunkte[felder[i][0]].Zr!, 2, 3);
+            pEm1.Zl = Werkzeuge.MatrixVectorMultiply(pEm1.Z!, vektor2);
+            pEm1.Zl = Werkzeuge.VectorVectorAdd(pEm1.Zl!, pEm1.LastÜ!);
         }
 
-        _darstellung.TrägerDarstellen();
+        _darstellung!.TrägerDarstellen();
         _darstellung.Momentenverlauf();
         _darstellung.Querkraftverlauf();
         _darstellung.TexteAnzeigen();
@@ -269,8 +268,8 @@ public class Berechnung
             gaussSolver = new Gleichungslöser(matrix, rs);
             if (gaussSolver.Decompose()) gaussSolver.Solve();
             //zStart(Ma, Qa) = vektor
-            piA!.ZR![2] = rs[0];
-            piA.ZR![3] = rs[1];
+            piA!.Zr![2] = rs[0];
+            piA.Zr![3] = rs[1];
         }
         else if (_dlt!.AnfangFest && !_dlt.EndeFest)
         {
@@ -283,8 +282,8 @@ public class Berechnung
             gaussSolver = new Gleichungslöser(matrix, rs);
             if (gaussSolver.Decompose()) gaussSolver.Solve();
             //zStart(Ma, Qa) = vektor
-            piA!.ZR![2] = rs[0];
-            piA.ZR![3] = rs[1];
+            piA!.Zr![2] = rs[0];
+            piA.Zr![3] = rs[1];
         }
         else if (_dlt.EndeFest && !_dlt.AnfangFest)
         {
@@ -297,18 +296,18 @@ public class Berechnung
             gaussSolver = new Gleichungslöser(matrix, rs);
             if (gaussSolver.Decompose()) gaussSolver.Solve();
             //zStart(phia, Qa) = vektor
-            piA!.ZR![1] = rs[0];
-            piA.ZR![3] = rs[1];
+            piA!.Zr![1] = rs[0];
+            piA.Zr![3] = rs[1];
         }
 
         // erneute Uebertragung des Zustandsvektors
         for (var k = 1; k < _dlt?.Übertragungspunkte.Count; k++)
         {
-            _dlt.Übertragungspunkte[k].ZL = Werkzeuge.MatrixVectorMultiply(
-                _dlt.Übertragungspunkte[k].A!, _dlt.Übertragungspunkte[k - 1].ZR!);
+            _dlt.Übertragungspunkte[k].Zl = Werkzeuge.MatrixVectorMultiply(
+                _dlt.Übertragungspunkte[k].A!, _dlt.Übertragungspunkte[k - 1].Zr!);
             if (k == _dlt?.Übertragungspunkte.Count - 1) continue;
-            _dlt!.Übertragungspunkte[k].ZR = Werkzeuge.VectorVectorAdd(
-                _dlt.Übertragungspunkte[k].ZL!, _dlt.Übertragungspunkte[k].Last!);
+            _dlt!.Übertragungspunkte[k].Zr = Werkzeuge.VectorVectorAdd(
+                _dlt.Übertragungspunkte[k].Zl!, _dlt.Übertragungspunkte[k].Last!);
         }
     }
 }

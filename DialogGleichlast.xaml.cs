@@ -50,8 +50,8 @@ public partial class DialogGleichlast
             Typ = 1,
             Last = new double[4],
             LastÜ = new double[4],
-            ZL = new double[4],
-            ZR = new double[4]
+            Zl = new double[4],
+            Zr = new double[4]
         };
 
         // Test, ob Anfangspunkt schon existiert als Übertragungspunkt
@@ -69,8 +69,8 @@ public partial class DialogGleichlast
             Lastlänge = _länge,
             Lastwert = _lastwert,
             LastÜ = new double[4],
-            ZL = new double[4],
-            ZR = new double[4]
+            Zl = new double[4],
+            Zr = new double[4]
         };
         // Test, ob der Endpunkt schon existiert, mit index
         for (var i = 0; i < _dlt!.Übertragungspunkte.Count; i++)

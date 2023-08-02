@@ -41,8 +41,8 @@ public partial class DialogNeuerTräger
             Position = position,
             Typ = 3,
             Z = new double[4, 2],
-            ZL = new double[4],
-            ZR = new double[4],
+            Zl = new double[4],
+            Zr = new double[4],
             Last = new double[4],
             LastÜ = new double[4],
             Lk = new double[4]
@@ -64,7 +64,7 @@ public partial class DialogNeuerTräger
                 Typ = 3,
                 Last = new double[4],
                 Z = zStartFest,
-                ZR = new double[4],
+                Zr = new double[4],
                 Lk = new double[4],
                 LastÜ = new double[4],
             };
@@ -84,7 +84,7 @@ public partial class DialogNeuerTräger
                 Typ = 3,
                 Last = new double[4],
                 Z = zStartGelenk,
-                ZR = new double[4],
+                Zr = new double[4],
                 Lk = new double[4],
                 LastÜ = new double[4],
             };
