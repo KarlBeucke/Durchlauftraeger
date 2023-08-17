@@ -65,29 +65,4 @@ public partial class DialogPunktlast
         _dlt?.Übertragungspunkte.RemoveAt(_index);
         Close();
     }
-
-    //private void LastwertLostFocus(object sender, RoutedEventArgs e)
-    //{
-    //    if (string.IsNullOrEmpty(Position.Text)) return;
-    //    if (string.IsNullOrEmpty(Lastwert.Text)) return;
-    //    var position = double.Parse(Position.Text);
-    //    var lastwert = -double.Parse(Lastwert.Text);
-    //    for (var i = 0; i < _dlt!.Übertragungspunkte.Count; i++)
-    //    {
-    //        if (Math.Abs(position - _dlt.Übertragungspunkte[i].Position) > double.Epsilon) continue;
-    //        _ = MessageBox.Show("Punktlast vorhanden: Lastwert ändern", "Durchlaufträger");
-    //        _dlt.Übertragungspunkte[i].Lastwert = lastwert;
-    //    }
-    //}
-    //private void PositionLostFocus(object sender, RoutedEventArgs e)
-    //{
-    //    if (string.IsNullOrEmpty(Position.Text)) return;
-    //    var position = double.Parse(Position.Text);
-    //    for (var i = 0; i < _dlt!.Übertragungspunkte.Count; i++)
-    //    {
-    //        if (Math.Abs(position - _dlt.Übertragungspunkte[i].Position) > double.Epsilon) continue;
-    //        _ = MessageBox.Show("Punktlast vorhanden: löschen oder Position ändern", "Durchlaufträger");
-    //        _dlt?.Übertragungspunkte.RemoveAt(i);
-    //    }
-    //}
 }

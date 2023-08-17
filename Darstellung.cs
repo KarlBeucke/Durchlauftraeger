@@ -304,7 +304,7 @@ public class Darstellung
             // Gleichlast
             else
             {
-                var lastPfeilGroesse = 6;
+                const int lastPfeilGroesse = 6;
 
                 var pathGeometry = new PathGeometry();
                 var pathFigure = new PathFigure();
@@ -528,7 +528,7 @@ public class Darstellung
 
     public void TexteAnzeigen()
     {
-        int offset = 0;
+        const int offset = 0;
         _endIndex = _dlt.Übertragungspunkte.Count - 1;
 
         // Momententexte
@@ -658,7 +658,7 @@ public class Darstellung
     }
     public void TexteEntfernen()
     {
-        foreach (TextBlock schnittgrößenText in Texte.Cast<TextBlock>()) { _visual.Children.Remove(schnittgrößenText); }
+        foreach (var schnittgrößenText in Texte.Cast<TextBlock>()) { _visual.Children.Remove(schnittgrößenText); }
     }
 
     public void ÜbertragungspunkteAnzeigen()
@@ -697,9 +697,9 @@ public class Darstellung
     }
     public void ÜbertragungspunkteEntfernen()
     {
-        foreach (TextBlock id in KnotenIDs.Cast<TextBlock>()) { _visual.Children.Remove(id); }
+        foreach (var id in KnotenIDs.Cast<TextBlock>()) { _visual.Children.Remove(id); }
         KnotenIDs.Clear();
-        foreach (Shape üPunktSymbol in ÜPunkte) { _visual.Children.Remove(üPunktSymbol); }
+        foreach (var üPunktSymbol in ÜPunkte.Cast<Shape>()) { _visual.Children.Remove(üPunktSymbol); }
         ÜPunkte.Clear();
     }
 

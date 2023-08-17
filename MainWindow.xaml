@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Durchlaufträgerberechnung Stand Juni 2023
-                                                            © Prof. Karl Beucke" Height="450" Width="780">
+        Title="Durchlaufträgerberechnung Stand August 2023                                                                                        
+               © Prof. Karl Beucke" Height="450" Width="780">
     <ScrollViewer HorizontalScrollBarVisibility="Auto" Margin="0,0,0,0">
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid>

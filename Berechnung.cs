@@ -28,7 +28,7 @@ public class Berechnung
 
         // Aufteilung in Felder zwischen Auflagern, Anzahl Felder wird in Liste gesammelt
         // jede Liste enthält eine weitere Liste mit Übertragungspunkte des Feldes
-        var felder = new List<List<int>>();
+        List<List<int>> felder = new();
         var punkte = new List<int> { 0 };
         for (var i = 1; i < _dlt.Übertragungspunkte.Count; i++)
         {
@@ -131,8 +131,10 @@ public class Berechnung
             var pip10 = _dlt.Übertragungspunkte[felder[i + 1][0]];
             pip10.Kk1Inv = kk1Inv;
             pip10.AnfangKopplung = new[,]
-                { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { kk[0, 0], kk[0, 1], 1, 0 }, { kk[1, 0], kk[1, 1], 0, 1 } };
-
+                { { 1, 0, 0, 0 }, 
+                  { 0, 1, 0, 0 }, 
+                  { kk[0, 0], kk[0, 1], 1, 0 }, 
+                  { kk[1, 0], kk[1, 1], 0, 1 } };
             pip10.Lk![2] = lk[0];
             pip10.Lk![3] = lk[1];
         }
@@ -299,7 +301,7 @@ public class Berechnung
                 }
         }
 
-        // erneute Uebertragung des Zustandsvektors
+        // erneute Übertragung des Zustandsvektors
         for (var k = 1; k < _dlt?.Übertragungspunkte.Count; k++)
         {
             _dlt.Übertragungspunkte[k].Zl = Werkzeuge.MatrixVectorMultiply(

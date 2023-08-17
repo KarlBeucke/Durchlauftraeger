@@ -53,16 +53,4 @@ public partial class DialogLager
         _dlt?.Übertragungspunkte.RemoveAt(_index);
         Close();
     }
-
-    //private void LagerPositionLostFocus(object sender, RoutedEventArgs e)
-    //{
-    //    if (string.IsNullOrEmpty(LagerPosition.Text)) return;
-    //    var position = double.Parse(LagerPosition.Text);
-    //    for (var i = 0; i < _dlt!.Übertragungspunkte.Count; i++)
-    //    {
-    //        if (Math.Abs(position - _dlt.Übertragungspunkte[i].Position) > double.Epsilon) continue;
-    //        _ = MessageBox.Show("Lager vorhanden: löschen oder Position ändern", "Durchlaufträger");
-    //        _dlt?.Übertragungspunkte.RemoveAt(i);
-    //    }
-    //}
 }
