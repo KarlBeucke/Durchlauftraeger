@@ -87,21 +87,10 @@ public class Berechnung
                     case 1:
                         l = pik.Position - pikm1.Position;
                         pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
-                        // Punktlast
-                        if (pik.Lastlänge < double.Epsilon)
-                        {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
-                            pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Punktlast!);
-                        }
-                        // Gleichlast
-                        else
-                        {
-                            pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
-                            var lkÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
-                            pik.LastÜ = Werkzeuge.VectorVectorAdd(lkÜ, pik.Linienlast!);
-                        }
-
+                        pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A!, z);
+                        pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A!, lü);
+                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Linienlast!);
+                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Punktlast!);
                         break;
                     // Abschnitt mit Lager am Ende, Übertragung des Zustandsvektors mit Federkopplung auf nächsten Abschnitt
                     case 3:
