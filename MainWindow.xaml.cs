@@ -21,7 +21,7 @@ namespace Durchlauftraeger
         public static bool KeineLast = true;
         private DialogPunktlast? _punktlast;
         private DialogGleichlast? _gleichlast;
-        public static Darstellung? _darstellung;
+        public static Darstellung? Darstellung;
         private bool _texteAn, _üPunkteAn;
 
         private Point _mittelpunkt;
@@ -40,8 +40,8 @@ namespace Durchlauftraeger
         {
             InitializeComponent();
             _dlt = new Modell();
-            _darstellung = new Darstellung(_dlt, DltVisuell);
-            _berechnung = new(_dlt, _darstellung, DltVisuell);
+            Darstellung = new Darstellung(_dlt, DltVisuell);
+            _berechnung = new(_dlt, Darstellung, DltVisuell);
             _texteAn = true;
             _üPunkteAn = true;
         }
@@ -52,7 +52,7 @@ namespace Durchlauftraeger
             KeineLast = true;
             Träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
             Träger.ShowDialog();
-            _darstellung!.FestlegungAuflösung();
+            Darstellung!.FestlegungAuflösung();
             _berechnung.Neuberechnung();
         }
 
@@ -136,12 +136,12 @@ namespace Durchlauftraeger
         {
             if (_texteAn)
             {
-                _darstellung!.TexteEntfernen();
+                Darstellung!.TexteEntfernen();
                 _texteAn = false;
             }
             else
             {
-                _darstellung!.TexteAnzeigen();
+                Darstellung!.TexteAnzeigen();
                 _texteAn = true;
             }
         }
@@ -149,12 +149,12 @@ namespace Durchlauftraeger
         {
             if (_üPunkteAn)
             {
-                _darstellung!.ÜbertragungspunkteEntfernen();
+                Darstellung!.ÜbertragungspunkteEntfernen();
                 _üPunkteAn = false;
             }
             else
             {
-                _darstellung!.ÜbertragungspunkteAnzeigen();
+                Darstellung!.ÜbertragungspunkteAnzeigen();
                 _üPunkteAn = true;
             }
         }
@@ -311,20 +311,18 @@ namespace Durchlauftraeger
                     PunktId = { Text = item.Text },
                     Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) }
                 };
-                _mittelpunkt = new Point(punkt.Position * _darstellung!.Auflösung + _darstellung.PlazierungH,
-                                         _darstellung.PlazierungV1);
+                _mittelpunkt = new Point(punkt.Position * Darstellung!.Auflösung + Darstellung.PlazierungH,
+                                         Darstellung.PlazierungV1);
                 Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
                 Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
                 DltVisuell.Children.Add(Punkt);
                 Pilot = Punkt;
             }
         }
-
         private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             MyPopup.IsOpen = false;
         }
-
         private HitTestResultBehavior HitTestCallBack(HitTestResult result)
         {
             var intersectionDetail = ((GeometryHitTestResult)result).IntersectionDetail;
@@ -367,7 +365,6 @@ namespace Durchlauftraeger
             _isDragging = true;
             MyPopup.IsOpen = false;
         }
-
         private void Punkt_MouseMove(object sender, MouseEventArgs e)
         {
             if (!_isDragging) return;
@@ -392,7 +389,7 @@ namespace Durchlauftraeger
             Canvas.SetLeft(knoten, mittelpunkt.X - Punkt.Width / 2);
             Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
 
-            var koordinate = _darstellung!.TransformBildPunkt(mittelpunkt);
+            var koordinate = Darstellung!.TransformBildPunkt(mittelpunkt);
             _punkt!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
         }
 

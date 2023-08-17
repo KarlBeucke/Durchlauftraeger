@@ -39,8 +39,10 @@ public class Übertragungspunkt
     public double[,]? A { get; set; }
     public double[,]? Z { get; set; }
     public double[,]? AnfangKopplung { get; set; }
+    public double[,]? kk1Inv { get; set; }
     public double[]? Zr { get; set; }
-    public double[]? Last { get; set; }
+    public double[]? Punktlast { get; set; }
+    public double[]? Linienlast { get; set; }
     public double[]? LastÜ { get; set; }
     public double[]? Lk { get; set; }
 
@@ -48,9 +50,9 @@ public class Übertragungspunkt
 
     public Übertragungspunkt(double position) { Position = position; }
 
-    public Übertragungspunkt(double position, double[] last)
+    public Übertragungspunkt(double position, double[] punktlast)
     {
         Position = position;
-        Last = last;
+        Punktlast = punktlast;
     }
 }

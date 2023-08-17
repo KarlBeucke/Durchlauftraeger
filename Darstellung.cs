@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Automation.Text;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -13,7 +12,7 @@ namespace Durchlauftraeger;
 public class Darstellung
 {
     private readonly Modell _dlt;
-    public readonly Canvas _visual;
+    private readonly Canvas _visual;
     private double _screenV, _screenH;
     public double Auflösung;
     private double _maxX;
@@ -73,45 +72,7 @@ public class Darstellung
         LagerZeichnen();
         if (MainWindow.KeineLast == false) LastenZeichnen();
     }
-    //public void ÜbertragungspunkteZeichnen()
-    //{
-    //    // Übertragungspunkte werden als EllipseGeometry der GeometryGroup tragwerk hinzugefügt
-    //    for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
-    //    {
-    //        var name = "Übertragungspunkt" + i;
-    //        var punkt = new Point(_dlt.Übertragungspunkte[i].Position * Auflösung, 0);
-    //        var übertragung = new EllipseGeometry(punkt, 5, 5);
 
-    //        // Übertragungspunkte werden gezeichnet
-    //        Shape üPunktSymbol = new Path()
-    //        {
-    //            Name = name,
-    //            Stroke = Blue,
-    //            StrokeThickness = 1,
-    //            Data = übertragung
-    //        };
-    //        _visual.Children.Add(üPunktSymbol);
-    //        Canvas.SetLeft(üPunktSymbol, PlazierungH);
-    //        Canvas.SetTop(üPunktSymbol, PlazierungV1);
-    //        ÜPunkte.Add(üPunktSymbol);
-    //    }
-    //}
-    //public void ÜbertragungspunkteIDs()
-    //{
-    //    for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
-    //    {
-    //        var id = new TextBlock
-    //        {
-    //            FontSize = 12,
-    //            Text = i.ToString(),
-    //            Foreground = Black
-    //        };
-    //        Canvas.SetTop(id, PlazierungV1);
-    //        Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
-    //        _visual.Children.Add(id);
-    //        KnotenIDs.Add(id);
-    //    }
-    //}
     private void LagerZeichnen()
     {
         PathGeometry pathGeometry;
@@ -506,7 +467,6 @@ public class Darstellung
         Canvas.SetTop(momentenPath, _plazierungV2);
         _visual.Children.Add(momentenPath);
     }
-
     public void Querkraftverlauf()
     {
         var pathGeometry = new PathGeometry();
@@ -696,7 +656,6 @@ public class Darstellung
         _visual.Children.Add(schnittgrößenText);
         Texte.Add(schnittgrößenText);
     }
-
     public void TexteEntfernen()
     {
         foreach (TextBlock schnittgrößenText in Texte.Cast<TextBlock>()) { _visual.Children.Remove(schnittgrößenText); }
@@ -734,7 +693,7 @@ public class Darstellung
             Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
             _visual.Children.Add(id);
             KnotenIDs.Add(id);
-        } 
+        }
     }
     public void ÜbertragungspunkteEntfernen()
     {

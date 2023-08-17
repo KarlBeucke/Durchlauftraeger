@@ -48,17 +48,15 @@ public partial class DialogGleichlast
         var übertragungsPunktA = new Übertragungspunkt(_anfang)
         {
             Typ = 1,
-            Last = new double[4],
+            Linienlast = new double[4],
             LastÜ = new double[4],
             Zl = new double[4],
             Zr = new double[4]
         };
 
         // Test, ob Anfangspunkt schon existiert als Übertragungspunkt
-        bool exists = false;
-        if (_dlt!.Übertragungspunkte
-            .Where((_, i) => !(Math.Abs(_anfang - _dlt.Übertragungspunkte[i].Position) > double.Epsilon)).Any())
-        { exists = true; }
+        var exists = _dlt!.Übertragungspunkte
+            .Where((_, i) => !(Math.Abs(_anfang - _dlt.Übertragungspunkte[i].Position) > double.Epsilon)).Any();
         if (!exists) { _dlt?.Übertragungspunkte.Add(übertragungsPunktA); }
 
         // Endpunkt der Gleichlast
@@ -66,6 +64,8 @@ public partial class DialogGleichlast
         var übertragungsPunktE = new Übertragungspunkt(_anfang + _länge, linienlast)
         {
             Typ = 1,
+            Punktlast = new double[4],
+            Linienlast = linienlast,
             Lastlänge = _länge,
             Lastwert = _lastwert,
             LastÜ = new double[4],
@@ -86,7 +86,7 @@ public partial class DialogGleichlast
         {
             _dlt.Übertragungspunkte[_index].Lastlänge = _länge;
             _dlt.Übertragungspunkte[_index].Lastwert = _lastwert;
-            _dlt.Übertragungspunkte[_index].Last = linienlast;
+            _dlt.Übertragungspunkte[_index].Linienlast = linienlast;
         }
         Close();
     }
@@ -98,7 +98,7 @@ public partial class DialogGleichlast
 
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
     {
-        if (_dlt!.Übertragungspunkte[_index - 1].Typ == 1 && _dlt.Übertragungspunkte[_index - 1].Last == null) _dlt.Übertragungspunkte.RemoveAt(_index - 1);
+        if (_dlt!.Übertragungspunkte[_index - 1].Typ == 1 && _dlt.Übertragungspunkte[_index - 1].Linienlast == null) _dlt.Übertragungspunkte.RemoveAt(_index - 1);
         if (_dlt!.Übertragungspunkte[_index].Typ == 1) _dlt.Übertragungspunkte.RemoveAt(_index);
         Close();
     }

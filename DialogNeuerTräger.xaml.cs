@@ -10,6 +10,7 @@ public partial class DialogNeuerTräger
         InitializeComponent();
         _dlt = dlt;
         Gesamtlänge.Focus();
+        _dlt?.Übertragungspunkte.Clear();
     }
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
@@ -28,7 +29,10 @@ public partial class DialogNeuerTräger
         { _dlt.AnfangFest = true; _dlt.EndeFest = false; }
 
         else if (EinspannungEnde.IsChecked != null && (bool)EinspannungEnde.IsChecked)
-        { _dlt.EndeFest = true; _dlt.AnfangFest = false; }
+        { _dlt.AnfangFest = false; _dlt.EndeFest = true; }
+
+        else
+        { _dlt.AnfangFest = false; _dlt.EndeFest = false; }
 
         NeueEinspannung();
         Close();
@@ -43,7 +47,8 @@ public partial class DialogNeuerTräger
             Z = new double[4, 2],
             Zl = new double[4],
             Zr = new double[4],
-            Last = new double[4],
+            Punktlast = new double[4],
+            Linienlast = new double[4],
             LastÜ = new double[4],
             Lk = new double[4]
         };
@@ -62,7 +67,8 @@ public partial class DialogNeuerTräger
             var übertragungsPunkt = new Übertragungspunkt(0)
             {
                 Typ = 3,
-                Last = new double[4],
+                Punktlast = new double[4],
+                Linienlast = new double[4],
                 Z = zStartFest,
                 Zr = new double[4],
                 Lk = new double[4],
@@ -82,7 +88,8 @@ public partial class DialogNeuerTräger
             var übertragungsPunkt = new Übertragungspunkt(0)
             {
                 Typ = 3,
-                Last = new double[4],
+                Punktlast = new double[4],
+                Linienlast = new double[4],
                 Z = zStartGelenk,
                 Zr = new double[4],
                 Lk = new double[4],

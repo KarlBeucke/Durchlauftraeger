@@ -1,20 +1,13 @@
 ﻿namespace Durchlauftraeger;
 
-class Werkzeuge
+public static class Werkzeuge
 {
     public static double[,] Uebertragungsmatrix(double l, double ei)
     {
-        var matrix = new double[4, 4];
-        matrix[0, 0] = 1;
-        matrix[0, 1] = l;
-        matrix[0, 2] = -l * l / (2 * ei);
-        matrix[0, 3] = -l * l * l / (6 * ei);
-        matrix[1, 1] = 1;
-        matrix[1, 2] = -l / ei;
-        matrix[1, 3] = -l * l / (2 * ei);
-        matrix[2, 2] = 1;
-        matrix[2, 3] = l;
-        matrix[3, 3] = 1;
+        double[,] matrix = { { 1, l,-l*l/(2*ei),-l*l*l/(6*ei)},
+                             { 0, 1,-l/ei      ,-l*l/(2*ei)},
+                             { 0, 0,    1      ,l},
+                             { 0, 0,    0      ,1}};
         return matrix;
     }
     public static double[] VectorVectorAdd(double[] vec1, double[] vec2)
