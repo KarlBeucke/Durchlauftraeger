@@ -15,20 +15,18 @@ namespace Durchlauftraeger
     {
         private static Modell? _dlt;
         private readonly Berechnung _berechnung;
-        public static DialogNeuerTräger? Träger;
+        private DialogNeuerTräger? _träger;
         private DialogEinspannung? _einspannung;
         private DialogLager? _lager;
-        public static bool KeineLast = true;
         private DialogPunktlast? _punktlast;
         private DialogGleichlast? _gleichlast;
-        public static Darstellung? Darstellung;
+        private static Darstellung? _darstellung;
         private bool _texteAn, _üPunkteAn;
 
         private Point _mittelpunkt;
         private PunktNeu? _punkt;
         private bool _isDragging;
-        public static Canvas? DltVisual;
-        public static Ellipse? Pilot;
+        private Ellipse? _pilot;
 
         //alle gefundenen "Shapes" werden in dieser Liste gesammelt
         private List<Shape>? _hitList;
@@ -40,8 +38,8 @@ namespace Durchlauftraeger
         {
             InitializeComponent();
             _dlt = new Modell();
-            Darstellung = new Darstellung(_dlt, DltVisuell);
-            _berechnung = new(_dlt, Darstellung, DltVisuell);
+            _darstellung = new Darstellung(_dlt, DltVisuell);
+            _berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
             _texteAn = true;
             _üPunkteAn = true;
         }
@@ -49,10 +47,10 @@ namespace Durchlauftraeger
         private void NeuerTräger(object sender, RoutedEventArgs e)
         {
             DltVisuell.Children.Clear();
-            KeineLast = true;
-            Träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
-            Träger.ShowDialog();
-            Darstellung!.FestlegungAuflösung();
+            _dlt!.KeineLast = true;
+            _träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
+            _träger.ShowDialog();
+            _darstellung!.FestlegungAuflösung();
             _berechnung.Neuberechnung();
         }
 
@@ -104,16 +102,16 @@ namespace Durchlauftraeger
 
         private void NeuePunktlast(object sender, RoutedEventArgs e)
         {
-            KeineLast = false;
             DltVisuell.Children.Clear();
+            _dlt!.KeineLast = false;
             _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
             _punktlast.ShowDialog();
             _berechnung.Neuberechnung();
         }
         private void NeueGleichlast(object sender, RoutedEventArgs e)
         {
-            KeineLast = false;
             DltVisuell.Children.Clear();
+            _dlt!.KeineLast = false;
             _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
             _gleichlast.ShowDialog();
             _berechnung.Neuberechnung();
@@ -136,12 +134,12 @@ namespace Durchlauftraeger
         {
             if (_texteAn)
             {
-                Darstellung!.TexteEntfernen();
+                _darstellung!.TexteEntfernen();
                 _texteAn = false;
             }
             else
             {
-                Darstellung!.TexteAnzeigen();
+                _darstellung!.TexteAnzeigen();
                 _texteAn = true;
             }
         }
@@ -149,12 +147,12 @@ namespace Durchlauftraeger
         {
             if (_üPunkteAn)
             {
-                Darstellung!.ÜbertragungspunkteEntfernen();
+                _darstellung!.ÜbertragungspunkteEntfernen();
                 _üPunkteAn = false;
             }
             else
             {
-                Darstellung!.ÜbertragungspunkteAnzeigen();
+                _darstellung!.ÜbertragungspunkteAnzeigen();
                 _üPunkteAn = true;
             }
         }
@@ -305,18 +303,18 @@ namespace Durchlauftraeger
             {
                 var index = int.Parse(item.Text);
                 var punkt = _dlt!.Übertragungspunkte[index];
-                _punkt = new PunktNeu(_dlt, _berechnung)
+                _punkt = new PunktNeu(_dlt, _berechnung,DltVisuell,_pilot!)
                 {
                     //Topmost = true, Owner = (Window)Parent,
                     PunktId = { Text = item.Text },
                     Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) }
                 };
-                _mittelpunkt = new Point(punkt.Position * Darstellung!.Auflösung + Darstellung.PlazierungH,
-                                         Darstellung.PlazierungV1);
+                _mittelpunkt = new Point(punkt.Position * _darstellung!.Auflösung + _darstellung.PlazierungH,
+                                         _darstellung.PlazierungV1);
                 Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
                 Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
                 DltVisuell.Children.Add(Punkt);
-                Pilot = Punkt;
+                _pilot = Punkt;
             }
         }
         private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -389,7 +387,7 @@ namespace Durchlauftraeger
             Canvas.SetLeft(knoten, mittelpunkt.X - Punkt.Width / 2);
             Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
 
-            var koordinate = Darstellung!.TransformBildPunkt(mittelpunkt);
+            var koordinate = _darstellung!.TransformBildPunkt(mittelpunkt);
             _punkt!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
         }
 

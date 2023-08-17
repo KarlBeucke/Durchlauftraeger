@@ -38,7 +38,7 @@ public class Berechnung
             punkte = new List<int> { i };
         }
 
-        if (KeineLast)
+        if (_dlt.KeineLast)
         {
             _dltVisuell!.Children.Clear();
             _darstellung.FestlegungAuflösung();
@@ -129,7 +129,7 @@ public class Berechnung
 
             // Anfangsvektor nächstes Feld
             var pip10 = _dlt.Übertragungspunkte[felder[i + 1][0]];
-            pip10.kk1Inv = kk1Inv;
+            pip10.Kk1Inv = kk1Inv;
             pip10.AnfangKopplung = new[,]
                 { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { kk[0, 0], kk[0, 1], 1, 0 }, { kk[1, 0], kk[1, 1], 0, 1 } };
 
@@ -199,7 +199,7 @@ public class Berechnung
             var x = new double[2];
             x[0] = piE.Zr![0] - piE.LastÜ![0];
             x[1] = piE.Zr![1] - piE.LastÜ![1];
-            x = Werkzeuge.MatrixVectorMultiply(piE.kk1Inv!, x);
+            x = Werkzeuge.MatrixVectorMultiply(piE.Kk1Inv!, x);
             var z = new double[4];
             z[1] = x[0];
             z[3] = x[1];

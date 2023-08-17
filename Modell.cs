@@ -7,7 +7,9 @@ public class Modell
     public double Trägerlänge { get; set; }
     public bool AnfangFest { get; set; }
     public bool EndeFest { get; set; }
+    public bool KeineLast { get; set; }
 
+    public Übertragungspunkt ÜbertragungsPunkt;
     public readonly List<Übertragungspunkt> Übertragungspunkte;
 
     public Modell()
@@ -26,25 +28,24 @@ public class Modell
         ÜbertragungsPunkt = übertragungsPunkt;
         Übertragungspunkte = new List<Übertragungspunkt>();
     }
-    public Übertragungspunkt ÜbertragungsPunkt;
 }
 
 public class Übertragungspunkt
 {
     public double Position { get; set; }
-    public short Typ { get; set; }
+    public short Typ { get; init; }
     public double Lastwert { get; set; }
     public double Lastlänge { get; set; }
     public double[]? Zl { get; set; }
     public double[,]? A { get; set; }
     public double[,]? Z { get; set; }
     public double[,]? AnfangKopplung { get; set; }
-    public double[,]? kk1Inv { get; set; }
+    public double[,]? Kk1Inv { get; set; }
     public double[]? Zr { get; set; }
-    public double[]? Punktlast { get; set; }
+    public double[]? Punktlast { get; init; }
     public double[]? Linienlast { get; set; }
     public double[]? LastÜ { get; set; }
-    public double[]? Lk { get; set; }
+    public double[]? Lk { get; init; }
 
     public Übertragungspunkt() { }
 

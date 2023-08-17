@@ -24,7 +24,7 @@ public class Darstellung
     private int _momentenAuflösung;
     private List<object> ÜPunkte { get; }
     private List<object> Texte { get; }
-    public List<object> KnotenIDs { get; }
+    private List<object> KnotenIDs { get; }
 
     public Darstellung(Modell dlt, Canvas visual)
     {
@@ -39,7 +39,7 @@ public class Darstellung
         _screenH = _visual.ActualWidth;
         _screenV = _visual.ActualHeight;
 
-        _maxX = double.Parse(MainWindow.Träger!.Gesamtlänge.Text);
+        _maxX = _dlt.Trägerlänge;
 
         Auflösung = (_screenH - 2 * RandLinks) / _maxX;
         PlazierungH = RandLinks;
@@ -70,7 +70,7 @@ public class Darstellung
 
         ÜbertragungspunkteAnzeigen();
         LagerZeichnen();
-        if (MainWindow.KeineLast == false) LastenZeichnen();
+        if (_dlt.KeineLast == false) LastenZeichnen();
     }
 
     private void LagerZeichnen()
