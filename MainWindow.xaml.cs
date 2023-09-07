@@ -13,18 +13,18 @@ namespace Durchlauftraeger;
 
 public partial class MainWindow
 {
-    private static Modell? _dlt;
+    private readonly Modell _dlt;
     private readonly Berechnung _berechnung;
+    private readonly Darstellung _darstellung;
     private DialogNeuerTräger? _träger;
     private DialogEinspannung? _einspannung;
     private DialogLager? _lager;
     private DialogPunktlast? _punktlast;
     private DialogGleichlast? _gleichlast;
-    private static Darstellung? _darstellung;
-    private bool _texteAn, _üPunkteAn;
+    private bool _momentenTexteAn, _querkraftTexteAn, _üPunkteAn;
 
-    private Point _mittelpunkt;
     private PunktNeu? _punkt;
+    private Point _mittelpunkt;
     private bool _isDragging;
     private Ellipse? _pilot;
 
@@ -40,17 +40,18 @@ public partial class MainWindow
         _dlt = new Modell();
         _darstellung = new Darstellung(_dlt, DltVisuell);
         _berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
-        _texteAn = true;
+        _momentenTexteAn = true;
+        _querkraftTexteAn = true;
         _üPunkteAn = true;
     }
 
     private void NeuerTräger(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
-        _dlt!.KeineLast = true;
+        _dlt.KeineLast = true;
         _träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _träger.ShowDialog();
-        _darstellung!.FestlegungAuflösung();
+        _darstellung.FestlegungAuflösung();
         _berechnung.Neuberechnung();
     }
 
@@ -62,7 +63,7 @@ public partial class MainWindow
             Topmost = true,
             Owner = (Window)Parent,
         };
-        if (_dlt!.AnfangFest && _dlt.EndeFest)
+        if (_dlt.AnfangFest && _dlt.EndeFest)
         {
             _einspannung.EinspannungAnfang.IsChecked = true;
             _einspannung.EinspannungEnde.IsChecked = true;
@@ -103,7 +104,7 @@ public partial class MainWindow
     private void NeuePunktlast(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
-        _dlt!.KeineLast = false;
+        _dlt.KeineLast = false;
         _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
         _berechnung.Neuberechnung();
@@ -111,7 +112,7 @@ public partial class MainWindow
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
-        _dlt!.KeineLast = false;
+        _dlt.KeineLast = false;
         _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _gleichlast.ShowDialog();
         _berechnung.Neuberechnung();
@@ -130,29 +131,45 @@ public partial class MainWindow
     {
         _berechnung.Neuberechnung();
     }
-    private void TexteAnzeigen(object sender, RoutedEventArgs e)
+
+    private void MomentenTexteAnzeigen(object sender, RoutedEventArgs e)
     {
-        if (_texteAn)
+        if (_momentenTexteAn)
         {
-            _darstellung!.TexteEntfernen();
-            _texteAn = false;
+            _darstellung.MomentenTexteEntfernen();
+            _momentenTexteAn = false;
         }
         else
         {
-            _darstellung!.TexteAnzeigen();
-            _texteAn = true;
+            _darstellung.MomentenTexteAnzeigen();
+            _momentenTexteAn = true;
         }
     }
+
+    private void QuerkraftTexteAnzeigen(object sender, RoutedEventArgs e)
+    {
+        if (_querkraftTexteAn)
+        {
+            _darstellung.QuerkraftTexteEntfernen();
+            _querkraftTexteAn = false;
+        }
+        else
+        {
+            _darstellung.QuerkraftTexteAnzeigen();
+            _querkraftTexteAn = true;
+        }
+    }
+
     private void ÜbertragungspunkteAnzeigen(object sender, RoutedEventArgs e)
     {
         if (_üPunkteAn)
         {
-            _darstellung!.ÜbertragungspunkteEntfernen();
+            _darstellung.ÜbertragungspunkteEntfernen();
             _üPunkteAn = false;
         }
         else
         {
-            _darstellung!.ÜbertragungspunkteAnzeigen();
+            _darstellung.ÜbertragungspunkteAnzeigen();
             _üPunkteAn = true;
         }
     }
@@ -169,6 +186,7 @@ public partial class MainWindow
         var sb = new StringBuilder();
         MyPopup.IsOpen = true;
         // click auf Shape Darstellungen
+        // Symbol (Kreis) für Übertragungspunkt
         foreach (var item in _hitList.Where(item => !string.IsNullOrEmpty(item.Name)))
         {
             var startIndex = "Übertragungspunkt".Length;
@@ -185,55 +203,41 @@ public partial class MainWindow
                 if (index == 0) // Punkt am Trägeranfang
                 {
                     var zr = _dlt.Übertragungspunkte[index].Zr;
-                    if (zr != null)
-                    {
-                        sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
-                        sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
-                        sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
-                        sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
-                    }
-
+                    sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
+                    sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
+                    sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
+                    sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
                     continue;
                 }
 
                 if (index == _dlt.Übertragungspunkte.Count - 1) // Punkt am Trägerende
                 {
                     var zl = _dlt.Übertragungspunkte[index].Zl;
-                    if (zl != null)
-                    {
-                        sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
-                        sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
-                        sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
-                        sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
-                    }
-
+                    sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
+                    sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
+                    sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
+                    sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
                     continue;
                 }
                 else
                 {
                     var zl = _dlt.Übertragungspunkte[index].Zl; // Punkt im Trägerspannbereich
-                    if (zl != null)
-                    {
-                        sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
-                        sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
-                        sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
-                        sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
-                    }
+                    sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
+                    sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
+                    sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
+                    sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
 
                     var zr = _dlt.Übertragungspunkte[index].Zr;
-                    if (zr != null)
-                    {
-                        sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
-                        sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
-                        sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
-                        sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
-                    }
+                    sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
+                    sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
+                    sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
+                    sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
                 }
             }
             MyPopupText.Text = sb.ToString();
             return;
         }
-
+        // grafische Darstellung von Lasten und Lagern
         foreach (var item in _hitList.Where(item => !string.IsNullOrEmpty(item.Name)))
         {
             if (item.Name.Contains("Punktlast"))
@@ -243,8 +247,8 @@ public partial class MainWindow
 
                 //Übertragungspunkt
                 if (_dlt?.Übertragungspunkte[index] == null) continue;
-                Array.Clear(_dlt.Übertragungspunkte[index].Zl!);
-                Array.Clear(_dlt.Übertragungspunkte[index].Zr!);
+                Array.Clear(_dlt.Übertragungspunkte[index].Zl);
+                Array.Clear(_dlt.Übertragungspunkte[index].Zr);
                 var punktlast = new DialogPunktlast(_dlt, index)
                 {
                     Position = { Text = _dlt.Übertragungspunkte[index].Position.ToString("G4") },
@@ -298,7 +302,6 @@ public partial class MainWindow
 
         // click auf Übertragungspunkt ID --> Eigenschaften eines Übertragungspunktes werden interaktiv verändert
         MyPopup.IsOpen = false;
-
         foreach (var item in _hitTextBlock)
         {
             var index = int.Parse(item.Text);
@@ -309,7 +312,7 @@ public partial class MainWindow
                 PunktId = { Text = item.Text },
                 Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) }
             };
-            _mittelpunkt = new Point(punkt.Position * _darstellung!.Auflösung + _darstellung.PlazierungH,
+            _mittelpunkt = new Point(punkt.Position * _darstellung.Auflösung + _darstellung.PlazierungH,
                 _darstellung.PlazierungV1);
             Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
             Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
@@ -387,7 +390,7 @@ public partial class MainWindow
         Canvas.SetLeft(knoten, mittelpunkt.X - Punkt.Width / 2);
         Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
 
-        var koordinate = _darstellung!.TransformBildPunkt(mittelpunkt);
+        var koordinate = _darstellung.TransformBildPunkt(mittelpunkt);
         _punkt!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
     }
 

@@ -23,7 +23,8 @@ public class Darstellung
     private int _endIndex;
     private int _momentenAuflösung;
     private List<object> ÜPunkte { get; }
-    private List<object> Texte { get; }
+    private List<object> MomentenTexte { get; }
+    private List<object> QuerkraftTexte { get; }
     private List<object> KnotenIDs { get; }
 
     public Darstellung(Modell dlt, Canvas visual)
@@ -31,7 +32,8 @@ public class Darstellung
         _dlt = dlt;
         _visual = visual;
         ÜPunkte = new List<object>();
-        Texte = new List<object>();
+        MomentenTexte = new List<object>();
+        QuerkraftTexte = new List<object>();
         KnotenIDs = new List<object>();
     }
 
@@ -169,11 +171,6 @@ public class Darstellung
         endPoint = new Point(endPoint.X + 2 * lagerSymbol, startPoint.Y + lagerSymbol);
         pathFigure.Segments.Add(new LineSegment(endPoint, true));
         pathFigure.Segments.Add(new LineSegment(startPoint, true));
-
-        startPoint = new Point(endPoint.X + 5, endPoint.Y + 5);
-        pathFigure.Segments.Add(new LineSegment(startPoint, false));
-        endPoint = new Point(startPoint.X - 50, startPoint.Y);
-        pathFigure.Segments.Add(new LineSegment(endPoint, true));
 
         pathGeometry.Figures.Add(pathFigure);
         return pathGeometry;
@@ -411,7 +408,7 @@ public class Darstellung
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
         _momentenAuflösung = 2;
-        var nextPunkt = new Point(0, _dlt.Übertragungspunkte[0].Zr![2] * _momentenAuflösung);
+        var nextPunkt = new Point(0, _dlt.Übertragungspunkte[0].Zr[2] * _momentenAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -420,7 +417,7 @@ public class Darstellung
         {
             var pi = _dlt.Übertragungspunkte[index];
             var pim1 = _dlt.Übertragungspunkte[index - 1];
-            nextPunkt = new Point(pi.Position * Auflösung, pi.Zl![2] * _momentenAuflösung);
+            nextPunkt = new Point(pi.Position * Auflösung, pi.Zl[2] * _momentenAuflösung);
 
             if (pi.Lastlänge < double.Epsilon)
             {
@@ -428,31 +425,31 @@ public class Darstellung
             }
             else
             {
-                var start = new Point(pim1.Position, pim1.Zr![2]);
-                var ende = new Point(pi.Position, pi.Zl[2]);
                 // dM(x)/dx=0: Q-q*xMax=0  xMax = Q/q
-                var abstandMax = pim1.Zr![3] / pi.Lastwert;
+                var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
 
                 // Kontrollpunkt für quadratischen Bezier-Spline
                 Point kontrollPunkt;
-                var mMax = pim1.Zr![2] + pim1.Zr![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+                var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
                 var maxPunkt = new Point(pim1.Position + abstandMax, mMax);
-                const double überhöhung = 2;
 
                 if (abstandMax > pi.Lastlänge)
                 {
                     // MomentenMaxpunkt liegt hinter Übertragungspunkt
-                    var proj = (Vector)maxPunkt + OrthogonaleProjektion(start-maxPunkt, ende-maxPunkt);
-                    kontrollPunkt = proj + überhöhung*(ende - proj);
+                    kontrollPunkt.X = (pi.Position - (maxPunkt.X - pi.Position)) * Auflösung;
+                    kontrollPunkt.Y = maxPunkt.Y * _momentenAuflösung;
                 }
                 else
                 {
                     // MomentenMaxpunkt liegt vor Übertragungspunkt
-                    var proj = (Vector)ende + OrthogonaleProjektion(start-ende, maxPunkt-ende);
-                    kontrollPunkt = proj + überhöhung*(maxPunkt - proj);
+                    maxPunkt = new Point(maxPunkt.X * Auflösung, maxPunkt.Y * _momentenAuflösung);
+                    // maxPunkt mit Kontrollpunkt für quadratischen Bezier-Spline
+                    var start = new Point(pim1.Position * Auflösung, pim1.Zl[2] * _momentenAuflösung);
+                    var ende = new Point(pi.Position * Auflösung, pi.Zl[2] * _momentenAuflösung);
+                    var proj = ende - OrthogonaleProjektion(ende - start, ende - maxPunkt);
+                    kontrollPunkt = proj + _momentenAuflösung * ((Vector)maxPunkt - (Vector)proj);
                 }
-                kontrollPunkt.X *= Auflösung;
-                kontrollPunkt.Y *= _momentenAuflösung;
+
                 pathFigure.Segments.Add(new QuadraticBezierSegment(kontrollPunkt, nextPunkt, true));
             }
             pathGeometry.Figures.Add(pathFigure);
@@ -492,8 +489,8 @@ public class Darstellung
         _visual.Children.Add(trägerPath);
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
-        var querkraftWert = _dlt.Übertragungspunkte[0].Zr![3];
-        var querkraftAuflösung = 2;
+        var querkraftWert = _dlt.Übertragungspunkte[0].Zr[3];
+        var querkraftAuflösung = 4;
         var nextPunkt = new Point(0, querkraftWert * querkraftAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
@@ -502,18 +499,18 @@ public class Darstellung
         for (var index = 1; index < _endIndex - 1; index++)
         {
             nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung,
-                _dlt.Übertragungspunkte[index].Zl![3] * querkraftAuflösung);
+                _dlt.Übertragungspunkte[index].Zl[3] * querkraftAuflösung);
             pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             pathGeometry.Figures.Add(pathFigure);
 
             nextPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung,
-                _dlt.Übertragungspunkte[index].Zr![3] * querkraftAuflösung);
+                _dlt.Übertragungspunkte[index].Zr[3] * querkraftAuflösung);
             pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             pathGeometry.Figures.Add(pathFigure);
         }
 
         nextPunkt = new Point(_dlt.Übertragungspunkte[_endIndex - 1].Position * Auflösung,
-            _dlt.Übertragungspunkte[_endIndex - 1].Zl![3] * querkraftAuflösung);
+            _dlt.Übertragungspunkte[_endIndex - 1].Zl[3] * querkraftAuflösung);
         pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
         pathGeometry.Figures.Add(pathFigure);
 
@@ -531,15 +528,15 @@ public class Darstellung
         _visual.Children.Add(momentenPath);
     }
 
-    public void TexteAnzeigen()
+    public void MomentenTexteAnzeigen()
     {
         const int offset = 0;
         _endIndex = _dlt.Übertragungspunkte.Count - 1;
 
         // Momententexte
         var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[0].Zr![2] * _momentenAuflösung + offset);
-        var mText = _dlt.Übertragungspunkte[0].Zr![2];
+            _dlt.Übertragungspunkte[0].Zr[2] * _momentenAuflösung + offset);
+        var mText = _dlt.Übertragungspunkte[0].Zr[2];
         var schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -549,13 +546,13 @@ public class Darstellung
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
         Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
-        Texte.Add(schnittgrößenText);
+        MomentenTexte.Add(schnittgrößenText);
 
         for (var index = 1; index <= _endIndex; index++)
         {
             textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
-                _dlt.Übertragungspunkte[index].Zl![2] * _momentenAuflösung + offset);
-            mText = _dlt.Übertragungspunkte[index].Zl![2];
+                _dlt.Übertragungspunkte[index].Zl[2] * _momentenAuflösung + offset);
+            mText = _dlt.Übertragungspunkte[index].Zl[2];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -565,32 +562,32 @@ public class Darstellung
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
             Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
-            Texte.Add(schnittgrößenText);
+            MomentenTexte.Add(schnittgrößenText);
 
             //  Text an Maximalmoment unter Gleichlast
-            var pi = _dlt.Übertragungspunkte[index];
-            var pim1 = _dlt.Übertragungspunkte[index - 1];
-            if (!(pi.Lastlänge > double.Epsilon)) continue;
-            var abstandMax = pim1.Zr![3] / pi.Lastwert;
-            if (abstandMax >= pi.Lastlänge) continue;
-            var mMax = pim1.Zr![2] + pim1.Zr![3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+            //var pi = _dlt.Übertragungspunkte[index];
+            //var pim1 = _dlt.Übertragungspunkte[index - 1];
+            //if (!(pi.Lastlänge > double.Epsilon)) continue;
+            //var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
+            //if (abstandMax >= pi.Lastlänge) continue;
+            //var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
 
-            textPunkt = new Point((pim1.Position + abstandMax) * Auflösung - 5, mMax * _momentenAuflösung);
-            var maxText = new TextBlock
-            {
-                FontSize = 12,
-                Text = mMax.ToString("F2"),
-                Foreground = DarkRed
-            };
-            Canvas.SetTop(maxText, textPunkt.Y + _plazierungV2);
-            Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
-            _visual.Children.Add(maxText);
-            Texte.Add(maxText);
+            //textPunkt = new Point((pim1.Position + abstandMax) * Auflösung - 5, mMax * _momentenAuflösung);
+            //var maxText = new TextBlock
+            //{
+            //    FontSize = 12,
+            //    Text = mMax.ToString("F2"),
+            //    Foreground = DarkRed
+            //};
+            //Canvas.SetTop(maxText, textPunkt.Y + _plazierungV2);
+            //Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
+            //_visual.Children.Add(maxText);
+            //MomentenTexte.Add(maxText);
         }
 
         textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[_endIndex].Zl![2] * _momentenAuflösung + offset);
-        mText = _dlt.Übertragungspunkte[_endIndex].Zl![2];
+            _dlt.Übertragungspunkte[_endIndex].Zl[2] * _momentenAuflösung + offset);
+        mText = _dlt.Übertragungspunkte[_endIndex].Zl[2];
         schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -600,14 +597,19 @@ public class Darstellung
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
         Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
-        Texte.Add(schnittgrößenText);
+        MomentenTexte.Add(schnittgrößenText);
+    }
+    public void QuerkraftTexteAnzeigen()
+    {
+        const int offset = 0;
+        _endIndex = _dlt.Übertragungspunkte.Count - 1;
 
 
         // Querkrafttexte
-        textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[0].Zr![3] * _momentenAuflösung + offset);
-        var qText = _dlt.Übertragungspunkte[0].Zr![3];
-        schnittgrößenText = new TextBlock
+        var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[0].Zr[3] * _momentenAuflösung + offset);
+        var qText = _dlt.Übertragungspunkte[0].Zr[3];
+        var schnittgrößenText = new TextBlock
         {
             FontSize = 12,
             Text = qText.ToString("F2"),
@@ -616,13 +618,13 @@ public class Darstellung
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
         Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
-        Texte.Add(schnittgrößenText);
+        QuerkraftTexte.Add(schnittgrößenText);
 
         for (var index = 1; index < _endIndex; index++)
         {
             textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung - offset,
-                _dlt.Übertragungspunkte[index].Zl![3] * _momentenAuflösung + offset);
-            qText = _dlt.Übertragungspunkte[index].Zl![3];
+                _dlt.Übertragungspunkte[index].Zl[3] * _momentenAuflösung + offset);
+            qText = _dlt.Übertragungspunkte[index].Zl[3];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -632,11 +634,11 @@ public class Darstellung
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
             Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
-            Texte.Add(schnittgrößenText);
+            QuerkraftTexte.Add(schnittgrößenText);
 
             textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
-                _dlt.Übertragungspunkte[index].Zr![3] * _momentenAuflösung + offset);
-            qText = _dlt.Übertragungspunkte[index].Zr![3];
+                _dlt.Übertragungspunkte[index].Zr[3] * _momentenAuflösung + offset);
+            qText = _dlt.Übertragungspunkte[index].Zr[3];
             schnittgrößenText = new TextBlock
             {
                 FontSize = 12,
@@ -646,12 +648,12 @@ public class Darstellung
             Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
             Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
             _visual.Children.Add(schnittgrößenText);
-            Texte.Add(schnittgrößenText);
+            QuerkraftTexte.Add(schnittgrößenText);
         }
 
         textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[_endIndex].Zl![3] * _momentenAuflösung + offset);
-        qText = _dlt.Übertragungspunkte[_endIndex].Zl![3];
+            _dlt.Übertragungspunkte[_endIndex].Zl[3] * _momentenAuflösung + offset);
+        qText = _dlt.Übertragungspunkte[_endIndex].Zl[3];
         schnittgrößenText = new TextBlock
         {
             FontSize = 12,
@@ -661,14 +663,21 @@ public class Darstellung
         Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV3);
         Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
         _visual.Children.Add(schnittgrößenText);
-        Texte.Add(schnittgrößenText);
+        QuerkraftTexte.Add(schnittgrößenText);
     }
 
-    public void TexteEntfernen()
+    public void MomentenTexteEntfernen()
     {
-        foreach (TextBlock schnittgrößenText in Texte.Cast<TextBlock>())
+        foreach (var momentenText in MomentenTexte.Cast<TextBlock>())
         {
-            _visual.Children.Remove(schnittgrößenText);
+            _visual.Children.Remove(momentenText);
+        }
+    }
+    public void QuerkraftTexteEntfernen()
+    {
+        foreach (var querkraftText in QuerkraftTexte.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(querkraftText);
         }
     }
 
@@ -744,10 +753,10 @@ public class Darstellung
         return koordinaten;
     }
 
-    private static Point OrthogonaleProjektion(Vector e1, Vector e2)
+    private static Vector OrthogonaleProjektion(Vector e1, Vector e2)
     {
-        var p = (e1.X*e2.X+e1.Y*e2.Y)/Math.Sqrt(e1.X*e1.X+e1.Y*e1.Y);
+        var p = (e1.X * e2.X + e1.Y * e2.Y) / Math.Sqrt(e1.X * e1.X + e1.Y * e1.Y);
         e1.Normalize();
-        return (Point)(p * e1);
+        return p * e1;
     }
 }

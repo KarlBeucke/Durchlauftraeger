@@ -15,43 +15,57 @@
                 </Grid.RowDefinitions>
                 <Button Grid.Row="0"   Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="5,0,0,0" Background="SkyBlue"
+                    ToolTip="neuen Durchlaufträger definieren"
                     Click="NeuerTräger">
                     <TextBlock FontWeight="Bold" Height="21">neu</TextBlock>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="60,0,0,0" Background="LawnGreen"
+                    ToolTip="Einspannung ändern"
                     Click="EinspannungÄndern">
                     <Image Source="Ressourcen\Einspannung.jpg"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="115,0,0,0" Background="LawnGreen"
+                    ToolTip="neues Auflager definieren"
                     Click="NeuesLager">
-                    <Image Source="Ressourcen/Auflager verschieblich.jpg"></Image>
+                    <Image Source="Ressourcen/Auflager.jpg"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="170,0,0,0" Background="LightCoral"
+                    ToolTip="neue Punktlast definieren"
                     Click="NeuePunktlast">
                     <Image Source="Ressourcen/Punktlast.jpg"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="225,0,0,0" Background="LightCoral"
+                    ToolTip="neue Gleichlast definieren"
                     Click="NeueGleichlast">
                     <Image Source="Ressourcen/Gleichlast.jpg"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                     Margin="280,0,0,0" Background="Yellow"
+                    ToolTip="neue Berechnung durchführen"
                     Click="NeueBerechnung">
                     <Image Source="Ressourcen/Zustand.jpg" Height="25" Width="43"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                         Margin="335,0,0,0" Background="LightGray"
+                        ToolTip="Darstellung der Übertragungspunkte an-/ausschalten"
                         Click="ÜbertragungspunkteAnzeigen">
                         <Image Source="Ressourcen/UePunkte.jpg" Height="25" Width="43"></Image>
                 </Button>
                 <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
                         Margin="390,0,0,0" Background="LightGray"
-                        Click="TexteAnzeigen">
-                        <Image Source="Ressourcen/Ergebnistexte.jpg" Height="25" Width="43"></Image>
+                        ToolTip="Momententexte an-/ausschalten"
+                        Click="MomentenTexteAnzeigen">
+                        <Image Source="Ressourcen/Biegemomente.jpg" Height="25" Width="43"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="450,0,0,0" Background="LightGray"
+                        ToolTip="Querkrafttexte an-/ausschalten"
+                        Click="QuerkraftTexteAnzeigen">
+                    <Image Source="Ressourcen/Querkräfte.jpg" Height="25" Width="43"></Image>
                 </Button>
             </Grid>
             <Canvas x:Name="DltVisuell" Height="395" Width="763" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"

@@ -5,21 +5,21 @@ namespace Durchlauftraeger;
 
 public partial class DialogPunktlast
 {
-    private readonly Modell? _dlt;
+    private readonly Modell _dlt;
     private readonly int _index;
     private readonly bool _exists;
     private double _position;
     private double _lastwert;
     private Übertragungspunkt _übertragungsPunkt = null!;
 
-    public DialogPunktlast(Modell? dlt)
+    public DialogPunktlast(Modell dlt)
     {
         InitializeComponent();
         _dlt = dlt;
         _exists = false;
         Position.Focus();
     }
-    public DialogPunktlast(Modell? dlt, int index)
+    public DialogPunktlast(Modell dlt, int index)
     {
         InitializeComponent();
         _dlt = dlt;
@@ -29,7 +29,7 @@ public partial class DialogPunktlast
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
-        if (_exists) _dlt?.Übertragungspunkte.RemoveAt(_index);
+        if (_exists) _dlt.Übertragungspunkte.RemoveAt(_index);
 
         if (!string.IsNullOrEmpty(Position.Text)) _position = double.Parse(Position.Text);
         if (!string.IsNullOrEmpty(Lastwert.Text)) _lastwert = double.Parse(Lastwert.Text);
@@ -45,13 +45,9 @@ public partial class DialogPunktlast
             Lastlänge = 0,
             Lastwert = punktlast[3],
             Punktlast = punktlast,
-            Linienlast = new double[4],
-            LastÜ = new double[4],
-            Zl = new double[4],
-            Zr = new double[4],
             Lk = lk
         };
-        _dlt?.Übertragungspunkte.Add(_übertragungsPunkt);
+        _dlt.Übertragungspunkte.Add(_übertragungsPunkt);
         Close();
     }
 
@@ -62,7 +58,16 @@ public partial class DialogPunktlast
 
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
     {
-        _dlt?.Übertragungspunkte.RemoveAt(_index);
+        _dlt.Übertragungspunkte.RemoveAt(_index);
         Close();
+    }
+
+    private void PositionTest(object sender, RoutedEventArgs e)
+    {
+        var position = double.Parse(Position.Text);
+        if (!(position < 0) && !(position > _dlt.Trägerlänge)) return;
+        Position.Text = "";
+        _ = MessageBox.Show("Lastposition außerhalb des Trägers", "Eingabe einer Punktlast",
+            MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
     }
 }

@@ -22,7 +22,7 @@
         <Label Grid.Row="0" Grid.Column="0" Margin="0,0,0,0">Position der Punktlast</Label>
         <Label Grid.Row="0" Grid.Column="0" Margin="0,15,0,0">auf dem Durchlaufträger</Label>
         <TextBox Name="Position" Grid.Row="0" Grid.Column="1" Margin="10,0,0,0" Height="22" 
-                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
+                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32" LostFocus="PositionTest"/>
         <Separator Grid.Column="0" Grid.Row="1" Height="1" Grid.ColumnSpan="2" Margin="0,48,0,1" />
         <Button Grid.Row="2" Grid.Column="0"  Height="26"
                 Click="BtnLöschen_Click" VerticalAlignment="Center" Margin="10,0,132,0">_löschen</Button>

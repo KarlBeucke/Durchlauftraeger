@@ -4,17 +4,17 @@ namespace Durchlauftraeger;
 
 public partial class DialogNeuerTräger
 {
-    private readonly Modell? _dlt;
-    public DialogNeuerTräger(Modell? dlt)
+    private readonly Modell _dlt;
+    public DialogNeuerTräger(Modell dlt)
     {
         InitializeComponent();
         _dlt = dlt;
         Gesamtlänge.Focus();
-        _dlt?.Übertragungspunkte.Clear();
+        _dlt.Übertragungspunkte.Clear();
     }
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
-        if (Gesamtlänge.Text.Length > 0) { _dlt!.Trägerlänge = double.Parse(Gesamtlänge.Text); }
+        if (Gesamtlänge.Text.Length > 0) { _dlt.Trägerlänge = double.Parse(Gesamtlänge.Text); }
         else
         {
             _ = MessageBox.Show("Länge muss definiert werden", "Durchlaufträger");
@@ -43,21 +43,14 @@ public partial class DialogNeuerTräger
         var übertragungsPunkt = new Übertragungspunkt(position)
         {
             Position = position,
-            Typ = 3,
-            Z = new double[4, 2],
-            Zl = new double[4],
-            Zr = new double[4],
-            Punktlast = new double[4],
-            Linienlast = new double[4],
-            LastÜ = new double[4],
-            Lk = new double[4]
+            Typ = 3
         };
-        _dlt?.Übertragungspunkte.Add(übertragungsPunkt);
+        _dlt.Übertragungspunkte.Add(übertragungsPunkt);
     }
 
     private void NeueEinspannung()
     {
-        if (_dlt!.AnfangFest)
+        if (_dlt.AnfangFest)
         {
             // eingespannter Rand am Trägeranfang, wa = phia = 0
             var zStartFest = new double[4, 2];
@@ -95,9 +88,9 @@ public partial class DialogNeuerTräger
                 Lk = new double[4],
                 LastÜ = new double[4],
             };
-            _dlt?.Übertragungspunkte.Add(übertragungsPunkt);
+            _dlt.Übertragungspunkte.Add(übertragungsPunkt);
 
-            NeuesLager(_dlt!.Trägerlänge);
+            NeuesLager(_dlt.Trägerlänge);
         }
     }
 

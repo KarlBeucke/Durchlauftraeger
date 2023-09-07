@@ -17,11 +17,10 @@
         </Grid.RowDefinitions>
         <Label Grid.Row="0" Grid.Column="0" Margin="0,7,0,0" Height="28" VerticalAlignment="Top">Anfangsposition der Gleichlast</Label>
         <TextBox Name="Anfang" Grid.Row="0" Grid.Column="1" Margin="10,10,0,0" Height="22" 
-                 VerticalAlignment="Top" HorizontalAlignment="Left" Width="32"/>
-
+                 VerticalAlignment="Top" HorizontalAlignment="Left" Width="32" LostFocus="AnfangTest"/>
         <Label Grid.Row="0" Grid.Column="0" Margin="0,36,0,0" Height="36" VerticalAlignment="Top">Länge der Gleichlast</Label>
         <TextBox Name="Länge" Grid.Row="0" Grid.Column="1" Margin="10,38,0,0" Height="22" 
-                 VerticalAlignment="Top" HorizontalAlignment="Left" Width="32"/>
+                 VerticalAlignment="Top" HorizontalAlignment="Left" Width="32" LostFocus="EndeTest"/>
         <Separator Grid.Column="0" Grid.ColumnSpan="2" Margin="0,48,0,0" Grid.Row="1" Height="1" VerticalAlignment="Top" />
 
         <Label Grid.Row="1" Grid.Column="0" Margin="0,0,0,1" >Lastwert der Gleichlast</Label>
