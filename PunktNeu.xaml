@@ -24,13 +24,13 @@ WindowStartupLocation="Manual" Left="1200" Top="20">
         <TextBox Name="Position" Grid.Row="1" Grid.Column="1" Margin="10,9,0,7" Height="20" 
                  VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
 
-        <Button IsDefault="True" Grid.Row="2" Grid.Column="1" Margin="0,3,-51,0"  
+        <Button Grid.Row="2" Grid.Column="0"  Height="26"
+                Click="BtnLöschen_Click" VerticalAlignment="Center" Margin="10,0,37,0">_löschen</Button>
+        <Button Grid.Row="2" Grid.Column="1" Margin="0,3,-69,0" 
                 HorizontalAlignment="Right" VerticalAlignment="Top"
-                Click="BtnDialogOk_Click" Height="26" Width="22">
-            _Ok</Button>
-        <Button Grid.Row="3" Grid.Column="1" Margin="0,3,-19,0" 
+                Click="BtnDialogOk_Click" Height="26" Width="36">_OK</Button>
+        <Button Grid.Row="2" Grid.Column="1" Margin="0,3,-23,0" 
                 HorizontalAlignment="Right" VerticalAlignment="Top"
-                Click="BtnDialogCancel_Click" Height="26" Width="61" 
-                >_Abbrechen</Button>
+                Click="BtnDialogCancel_Click" Height="26" Width="61">_Abbrechen</Button>
     </Grid>
 </Window>

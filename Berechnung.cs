@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Controls;
 
 namespace Durchlauftraeger;
@@ -18,6 +19,7 @@ public class Berechnung
 
     public void Neuberechnung()
     {
+        double[] rs;
         double[] lk;
 
         // Sortierung der Übertragungspunkte nach aufsteigender Position,+ x-Koordinate
@@ -36,18 +38,13 @@ public class Berechnung
             punkte = new List<int> { i };
         }
 
-        if (_dlt.KeineLast)
-        {
-            _dltVisuell.Children.Clear();
-            _darstellung.FestlegungAuflösung();
-            _darstellung.TrägerDarstellen();
-            return;
-        }
-
         _dltVisuell.Children.Clear();
+        _darstellung.TrägerDarstellen();
+        if (_dlt.KeineLast) { return; }
 
         // (Vorwärts)-Übertragung mit Unbekannten im Zustandsvektor
         // beginnend mit dem ersten DLT-Feld
+        Übertragungspunkt? piE;
         for (var i = 0; i < felder.Count; i++)
         {
             // ein Feld hat mehrere Abschnitte
@@ -104,7 +101,6 @@ public class Berechnung
             if (felder.Count == 1)
             {
                 Einfeldträger();
-                _darstellung.TrägerDarstellen();
                 _darstellung.Momentenverlauf();
                 _darstellung.Querkraftverlauf();
                 _darstellung.MomentenTexteAnzeigen();
@@ -115,7 +111,7 @@ public class Berechnung
             // Mehrfeldträger, nicht im letzten Feld
             if (i >= felder.Count - 1) continue;
             // Koppelfedermatrix mit Lastterm lK
-            var piE = _dlt.Übertragungspunkte[felder[i][^1]];
+            piE = _dlt.Übertragungspunkte[felder[i][^1]];
             var kk1 = Werkzeuge.SubMatrix(piE.Z, 0, 1);
             var kk2 = Werkzeuge.SubMatrix(piE.Z, 2, 3);
             var kk1Inv = Werkzeuge.Matrix2By2Inverse(kk1);
@@ -140,41 +136,36 @@ public class Berechnung
 
         // Am rechten Rand des DLTs Gleichungssystem aufstellen und lösen
         // letztes Feld der Übertragung
-        var zGelenk = new double[4, 2];
         double[,] matrix;
-        double[] rs;
-        if (_dlt.EndeFest) // gilt für beide AnfangFest UND EndeFest und nur EndeFest
+        if (_dlt.EndeFest)
         {
             // eingespanntes Lager am Ende: we = phie = 0
-            zGelenk[2, 0] = 1; zGelenk[3, 1] = 1;
-            var piE = _dlt.Übertragungspunkte[^1];
-            matrix = Werkzeuge.SubMatrix(piE.Z, 0, 1);
-            lk = piE.LastÜ;
-            // rs Zustandsgrößen am  am Anfang des letzten Feldes
+            matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 1);
+            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
             rs = Werkzeuge.SubVektor(lk, 0, 1);
         }
         else
         {
             // gelenkiges Lager am Ende: we = Me = 0
-            zGelenk[1, 0] = 1; zGelenk[3, 1] = 1;
-            var piE = _dlt.Übertragungspunkte[^1];
-            matrix = Werkzeuge.SubMatrix(piE.Z, 0, 2);
-            lk = piE.LastÜ;
-            // rs Zustandsgrößen am Anfang des letzten Feldes
+            matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 2);
+            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
             rs = Werkzeuge.SubVektor(lk, 0, 2);
         }
-        rs[0] = -rs[0];
-        rs[1] = -rs[1];
+        rs[0] = -rs[0]; rs[1] = -rs[1];
         var gaussSolver = new Gleichungslöser(matrix, rs);
         if (gaussSolver.Decompose()) gaussSolver.Solve();
 
-        // (Rückwärts)-Übertragung mit bekannten Größen im Zustandsvektor
-        // beginnend mit dem letzten DLT-Feld
+        // (Rückwärts)-Übertragung mit bekannten Größen im Zustandsvektor beginnend mit dem letzten DLT-Feld
         // Übertragung des Anfangsvektors über die Feder, die das vorhergehende Feld ersetzt
+
         // Anfangsvektor im letzten Feld
+        // '^' unary_expression is called the "index from end operator"
         var pE0 = _dlt.Übertragungspunkte[felder[^1][0]];
-        pE0.Zr = Werkzeuge.MatrixVectorMultiply(zGelenk, rs);
-        pE0.Zr = Werkzeuge.MatrixVectorMultiply(pE0.AnfangKopplung, pE0.Zr);
+        var zGelenk = new double[4, 2];
+        zGelenk[1, 0] = 1; zGelenk[3, 1] = 1;
+        var kopplung = Werkzeuge.MatrixMatrixMultiply(pE0.AnfangKopplung, zGelenk);
+        // Anfangsvektor im letzten Feld
+        pE0.Zr = Werkzeuge.MatrixVectorMultiply(kopplung, rs);
         pE0.Zr = Werkzeuge.VectorVectorAdd(pE0.Zr, pE0.Lk);
 
         // Zustandsvektoren im letzten Feld
@@ -193,7 +184,7 @@ public class Berechnung
         for (var i = felder.Count - 2; i >= 0; i--)
         {
             var pi0 = _dlt.Übertragungspunkte[felder[i][0]];
-            var piE = _dlt.Übertragungspunkte[felder[i][^1]];
+            piE = _dlt.Übertragungspunkte[felder[i][^1]];
             var x = new double[2];
             x[0] = piE.Zr[0] - piE.LastÜ[0];
             x[1] = piE.Zr[1] - piE.LastÜ[1];
@@ -230,8 +221,6 @@ public class Berechnung
                 piI.Zr = Werkzeuge.VectorVectorAdd(piI.Zl, piI.Punktlast);
             }
         }
-
-        _darstellung.TrägerDarstellen();
         _darstellung.Momentenverlauf();
         _darstellung.Querkraftverlauf();
         _darstellung.MomentenTexteAnzeigen();
@@ -286,5 +275,14 @@ public class Berechnung
             if (k == _dlt.Übertragungspunkte.Count - 1) continue;
             pik.Zr = Werkzeuge.VectorVectorAdd(pik.Zl, pik.Punktlast);
         }
+    }
+
+    public bool CheckLasten()
+    {
+        var keineLasten = true;
+        foreach (var unused in _dlt.Übertragungspunkte.
+                     Where(punkt => punkt.Lastwert != 0 || punkt.Punktlast.Sum() != 0))
+        { keineLasten = false; }
+        return keineLasten;
     }
 }

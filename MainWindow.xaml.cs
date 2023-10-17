@@ -14,19 +14,17 @@ namespace Durchlauftraeger;
 public partial class MainWindow
 {
     private readonly Modell _dlt;
-    private readonly Berechnung _berechnung;
+    public static Berechnung? Berechnung;
     private readonly Darstellung _darstellung;
     private DialogNeuerTräger? _träger;
     private DialogEinspannung? _einspannung;
     private DialogLager? _lager;
     private DialogPunktlast? _punktlast;
     private DialogGleichlast? _gleichlast;
-    private bool _momentenTexteAn, _querkraftTexteAn, _üPunkteAn;
+    private bool _momentenTexteAn, _momentMaxTexteAn, _querkraftTexteAn, _üPunkteAn;
 
-    private PunktNeu? _punkt;
     private Point _mittelpunkt;
     private bool _isDragging;
-    private Ellipse? _pilot;
 
     //alle gefundenen "Shapes" werden in dieser Liste gesammelt
     private List<Shape>? _hitList;
@@ -39,7 +37,7 @@ public partial class MainWindow
         InitializeComponent();
         _dlt = new Modell();
         _darstellung = new Darstellung(_dlt, DltVisuell);
-        _berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
+        Berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
         _momentenTexteAn = true;
         _querkraftTexteAn = true;
         _üPunkteAn = true;
@@ -52,7 +50,7 @@ public partial class MainWindow
         _träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _träger.ShowDialog();
         _darstellung.FestlegungAuflösung();
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
 
     private void EinspannungÄndern(object sender, RoutedEventArgs e)
@@ -90,7 +88,7 @@ public partial class MainWindow
             // zaL = zStartGelenk * (phia, Qa)
             _dlt.Übertragungspunkte[0].Z = zStartGelenk;
         }
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
 
     private void NeuesLager(object sender, RoutedEventArgs e)
@@ -98,7 +96,7 @@ public partial class MainWindow
         DltVisuell.Children.Clear();
         _lager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
         _lager.ShowDialog();
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
 
     private void NeuePunktlast(object sender, RoutedEventArgs e)
@@ -107,7 +105,7 @@ public partial class MainWindow
         _dlt.KeineLast = false;
         _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
@@ -115,7 +113,7 @@ public partial class MainWindow
         _dlt.KeineLast = false;
         _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _gleichlast.ShowDialog();
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
 
     public class OrdneAufsteigendeKoordinaten : IComparer<Übertragungspunkt>
@@ -129,7 +127,7 @@ public partial class MainWindow
 
     private void NeueBerechnung(object sender, RoutedEventArgs e)
     {
-        _berechnung.Neuberechnung();
+        Berechnung?.Neuberechnung();
     }
 
     private void MomentenTexteAnzeigen(object sender, RoutedEventArgs e)
@@ -179,85 +177,79 @@ public partial class MainWindow
         _hitList = new List<Shape>();
         _hitTextBlock.Clear();
         var hitPoint = e.GetPosition(DltVisuell);
-        _hitArea = new EllipseGeometry(hitPoint, 5.0, 5.0);
+        _hitArea = new EllipseGeometry(hitPoint, 10, 10);
         VisualTreeHelper.HitTest(DltVisuell, null, HitTestCallBack,
             new GeometryHitTestParameters(_hitArea));
-
-        var sb = new StringBuilder();
-        MyPopup.IsOpen = true;
-        // click auf Shape Darstellungen
-        // Symbol (Kreis) für Übertragungspunkt
-        foreach (var item in _hitList.Where(item => !string.IsNullOrEmpty(item.Name)))
+  
+        // click auf Übertragungspunkt ID --> Eigenschaften eines Übertragungspunktes werden dargestellt
+        foreach (var item in _hitTextBlock)
         {
-            var startIndex = "Übertragungspunkt".Length;
-            if (!item.Name.Contains("Übertragungspunkt")) continue;
-            // index des zugehörigen Übertragungspunktes angehängt an "Übertragungspunkt"
-            if (startIndex < item.Name.Length)
+            if (_dlt == null || item.Name != "Id") continue;
+            var index = int.Parse(item.Text);
+            var sb = new StringBuilder();
+            sb.Append("Id = " + item.Text + "\n");
+
+            if (index == 0) // Punkt am Trägeranfang
             {
-                var index = int.Parse(item.Name[startIndex..]);
+                var zr = _dlt.Übertragungspunkte[index].Zr;
+                sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
+                sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
+                sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
+                sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
+            }
+            else if (index < _dlt.Übertragungspunkte.Count - 1)
+            {
+                var zl = _dlt.Übertragungspunkte[index].Zl; // Punkt im Trägerspannbereich
+                sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
+                sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
+                sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
+                sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
 
-                if (_dlt?.Übertragungspunkte[index] == null) continue;
-                MyPopup.IsOpen = true;
-                sb.Append(item.Name + "\n");
+                var zr = _dlt.Übertragungspunkte[index].Zr;
+                sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
+                sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
+                sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
+                sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
+            }
 
-                if (index == 0) // Punkt am Trägeranfang
-                {
-                    var zr = _dlt.Übertragungspunkte[index].Zr;
-                    sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
-                    sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
-                    sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
-                    sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
-                    continue;
-                }
-
-                if (index == _dlt.Übertragungspunkte.Count - 1) // Punkt am Trägerende
-                {
-                    var zl = _dlt.Übertragungspunkte[index].Zl;
-                    sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
-                    sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
-                    sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
-                    sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
-                    continue;
-                }
-                else
-                {
-                    var zl = _dlt.Übertragungspunkte[index].Zl; // Punkt im Trägerspannbereich
-                    sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
-                    sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
-                    sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
-                    sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
-
-                    var zr = _dlt.Übertragungspunkte[index].Zr;
-                    sb.Append("w rechts\t= " + zr[0].ToString("g3") + "\n");
-                    sb.Append("\u03c6 rechts\t= " + zr[1].ToString("g3") + "\n");
-                    sb.Append("M rechts\t= " + zr[2].ToString("g3") + "\n");
-                    sb.Append("Q rechts\t= " + zr[3].ToString("g3"));
-                }
+            else if (index == _dlt.Übertragungspunkte.Count - 1) // Punkt am Trägerende
+            {
+                var zl = _dlt.Übertragungspunkte[index].Zl;
+                sb.Append("w links\t= " + zl[0].ToString("g3") + "\n");
+                sb.Append("\u03c6 links\t= " + zl[1].ToString("g3") + "\n");
+                sb.Append("M links\t= " + zl[2].ToString("g3") + "\n");
+                sb.Append("Q links\t= " + zl[3].ToString("g3") + "\n" + "\n");
             }
             MyPopupText.Text = sb.ToString();
+            MyPopup.IsOpen = true;
             return;
         }
-        // grafische Darstellung von Lasten und Lagern
+
+        // click auf Shape Darstellungen
+
+        // grafische Darstellung von Lasten, Lagern und Momentenlinien
         foreach (var item in _hitList.Where(item => !string.IsNullOrEmpty(item.Name)))
         {
             if (item.Name.Contains("Punktlast"))
             {
+                //Übertragungspunkt
                 var startIndex = "Punktlast".Length;
                 var index = int.Parse(item.Name[startIndex..]);
-
-                //Übertragungspunkt
-                if (_dlt?.Übertragungspunkte[index] == null) continue;
+                var punkt = _dlt!.Übertragungspunkte[index];
                 Array.Clear(_dlt.Übertragungspunkte[index].Zl);
                 Array.Clear(_dlt.Übertragungspunkte[index].Zr);
-                var punktlast = new DialogPunktlast(_dlt, index)
+                _punktlast = new DialogPunktlast(_dlt, index, Berechnung, DltVisuell)
                 {
-                    Position = { Text = _dlt.Übertragungspunkte[index].Position.ToString("G4") },
-                    Lastwert = { Text = (-_dlt.Übertragungspunkte[index].Lastwert).ToString("G4") }
+                    //Topmost = true, Owner = (Window)Parent,
+                    Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) },
+                    Lastwert = { Text = (-punkt.Punktlast[3]).ToString("N2", CultureInfo.CurrentCulture) } 
                 };
-                MyPopup.IsOpen = false;
-                punktlast.ShowDialog();
-                DltVisuell.Children.Clear();
-                _berechnung.Neuberechnung();
+                _mittelpunkt = new Point(punkt.Position * _darstellung.Auflösung + _darstellung.PlazierungH,
+                    _darstellung.PlazierungV1);
+                Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
+                Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
+                DltVisuell.Children.Add(Punkt);
+                _punktlast.Show();
             }
 
             if (item.Name.Contains("Gleichlast"))
@@ -267,22 +259,31 @@ public partial class MainWindow
                 // Der Range Operator (..) wird benutzt als Abkürzung für den Zugriff auf arrays
                 // binär(a..b): von-bis, unär(a..): von-Ende
                 var endIndex = int.Parse(item.Name[länge..]);
+                var anfangIndex = 0;
+                // finde Übertragungspunkt am Anfang der Gleichlast
+                var piE = _dlt!.Übertragungspunkte[endIndex];
+                for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+                {
+                    if (Math.Abs(_dlt.Übertragungspunkte[i].Position -
+                                 (piE.Position - piE.Lastlänge)) > double.Epsilon) continue;
+                    anfangIndex = i;
+                    break;
+                }
 
                 // Übertragungspunkt am Ende enthält Lastlänge und -wert
-                if (_dlt?.Übertragungspunkte[endIndex] == null) continue;
                 DialogGleichlast gleichlast = new(_dlt, endIndex)
                 {
-                    Anfang = { Text = _dlt.Übertragungspunkte[endIndex - 1].Position.ToString("G4") },
+                    Anfang = { Text = _dlt.Übertragungspunkte[anfangIndex].Position.ToString("G4") },
                     Länge = { Text = _dlt.Übertragungspunkte[endIndex].Lastlänge.ToString("G4") },
                     Lastwert = { Text = (_dlt.Übertragungspunkte[endIndex].Lastwert).ToString("G4") }
                 };
                 MyPopup.IsOpen = false;
                 gleichlast.ShowDialog();
                 DltVisuell.Children.Clear();
-                _berechnung.Neuberechnung();
+                Berechnung?.Neuberechnung();
             }
 
-            if (!item.Name.Contains("Lager")) continue;
+            if (item.Name.Contains("Lager"))
             {
                 var startIndex = "Lager".Length;
                 var index = int.Parse(item.Name[startIndex..]);
@@ -296,28 +297,23 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 lager.ShowDialog();
                 DltVisuell.Children.Clear();
-                _berechnung.Neuberechnung();
+                Berechnung?.Neuberechnung();
             }
-        }
 
-        // click auf Übertragungspunkt ID --> Eigenschaften eines Übertragungspunktes werden interaktiv verändert
-        MyPopup.IsOpen = false;
-        foreach (var item in _hitTextBlock)
-        {
-            var index = int.Parse(item.Text);
-            var punkt = _dlt!.Übertragungspunkte[index];
-            _punkt = new PunktNeu(_dlt, _berechnung, DltVisuell, _pilot!)
+            if (!item.Name.Contains("Momentenlinie")) continue;
             {
-                //Topmost = true, Owner = (Window)Parent,
-                PunktId = { Text = item.Text },
-                Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) }
-            };
-            _mittelpunkt = new Point(punkt.Position * _darstellung.Auflösung + _darstellung.PlazierungH,
-                _darstellung.PlazierungV1);
-            Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
-            Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
-            DltVisuell.Children.Add(Punkt);
-            _pilot = Punkt;
+                // click auf Momentenlinie --> Maximalmomente unter Gleichlast werden angezeigt
+                if (_momentMaxTexteAn)
+                {
+                    _darstellung.MomentenMaxTexteEntfernen();
+                    _momentMaxTexteAn = false;
+                }
+                else
+                {
+                    _darstellung.MomentenMaxTexteAnzeigen();
+                    _momentMaxTexteAn = true;
+                }
+            }
         }
     }
     private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -326,6 +322,7 @@ public partial class MainWindow
     }
     private HitTestResultBehavior HitTestCallBack(HitTestResult result)
     {
+        //_hitList=new List<Shape>();
         var intersectionDetail = ((GeometryHitTestResult)result).IntersectionDetail;
 
         switch (intersectionDetail)
@@ -341,8 +338,6 @@ public partial class MainWindow
                 }
                 return HitTestResultBehavior.Continue;
             case IntersectionDetail.FullyInside:
-                return HitTestResultBehavior.Continue;
-            case IntersectionDetail.Intersects:
                 switch (result.VisualHit)
                 {
                     case Shape hit:
@@ -353,10 +348,18 @@ public partial class MainWindow
                         break;
                 }
                 return HitTestResultBehavior.Continue;
+            case IntersectionDetail.Intersects:
+                switch (result.VisualHit)
+                {
+                    case Shape hit:
+                        _hitList?.Add(hit);
+                        break;
+                }
+                return HitTestResultBehavior.Continue;
             case IntersectionDetail.NotCalculated:
                 return HitTestResultBehavior.Continue;
             default:
-                return HitTestResultBehavior.Stop;
+                return HitTestResultBehavior.Continue;
         }
     }
 
@@ -391,7 +394,7 @@ public partial class MainWindow
         Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
 
         var koordinate = _darstellung.TransformBildPunkt(mittelpunkt);
-        _punkt!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
+        _punktlast!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
     }
 
     private void Punkt_RightButtonDown(object sender, MouseButtonEventArgs e)
