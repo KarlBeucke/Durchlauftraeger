@@ -14,7 +14,7 @@ namespace Durchlauftraeger;
 public partial class MainWindow
 {
     private readonly Modell _dlt;
-    public static Berechnung? Berechnung;
+    private readonly Berechnung? _berechnung;
     private readonly Darstellung _darstellung;
     private DialogNeuerTräger? _träger;
     private DialogEinspannung? _einspannung;
@@ -37,7 +37,7 @@ public partial class MainWindow
         InitializeComponent();
         _dlt = new Modell();
         _darstellung = new Darstellung(_dlt, DltVisuell);
-        Berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
+        _berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
         _momentenTexteAn = true;
         _querkraftTexteAn = true;
         _üPunkteAn = true;
@@ -50,9 +50,8 @@ public partial class MainWindow
         _träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _träger.ShowDialog();
         _darstellung.FestlegungAuflösung();
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
-
     private void EinspannungÄndern(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
@@ -61,13 +60,21 @@ public partial class MainWindow
             Topmost = true,
             Owner = (Window)Parent,
         };
-        if (_dlt.AnfangFest && _dlt.EndeFest)
+        switch (_dlt.AnfangFest)
         {
-            _einspannung.EinspannungAnfang.IsChecked = true;
-            _einspannung.EinspannungEnde.IsChecked = true;
+            case true when _dlt.EndeFest:
+                _einspannung.EinspannungAnfang.IsChecked = true;
+                _einspannung.EinspannungEnde.IsChecked = true;
+                break;
+            case true:
+                _einspannung.EinspannungAnfang.IsChecked = true;
+                break;
+            default:
+                {
+                    if (_dlt.EndeFest) _einspannung.EinspannungEnde.IsChecked = true;
+                    break;
+                }
         }
-        else if (_dlt.AnfangFest) _einspannung.EinspannungAnfang.IsChecked = true;
-        else if (_dlt.EndeFest) _einspannung.EinspannungEnde.IsChecked = true;
         _einspannung.ShowDialog();
 
         if (_dlt.AnfangFest)
@@ -88,24 +95,22 @@ public partial class MainWindow
             // zaL = zStartGelenk * (phia, Qa)
             _dlt.Übertragungspunkte[0].Z = zStartGelenk;
         }
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
-
     private void NeuesLager(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
         _lager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
         _lager.ShowDialog();
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
-
     private void NeuePunktlast(object sender, RoutedEventArgs e)
     {
         DltVisuell.Children.Clear();
         _dlt.KeineLast = false;
         _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
@@ -113,7 +118,7 @@ public partial class MainWindow
         _dlt.KeineLast = false;
         _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _gleichlast.ShowDialog();
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
 
     public class OrdneAufsteigendeKoordinaten : IComparer<Übertragungspunkt>
@@ -127,7 +132,7 @@ public partial class MainWindow
 
     private void NeueBerechnung(object sender, RoutedEventArgs e)
     {
-        Berechnung?.Neuberechnung();
+        _berechnung?.Neuberechnung();
     }
 
     private void MomentenTexteAnzeigen(object sender, RoutedEventArgs e)
@@ -143,7 +148,6 @@ public partial class MainWindow
             _momentenTexteAn = true;
         }
     }
-
     private void QuerkraftTexteAnzeigen(object sender, RoutedEventArgs e)
     {
         if (_querkraftTexteAn)
@@ -180,7 +184,7 @@ public partial class MainWindow
         _hitArea = new EllipseGeometry(hitPoint, 10, 10);
         VisualTreeHelper.HitTest(DltVisuell, null, HitTestCallBack,
             new GeometryHitTestParameters(_hitArea));
-  
+
         // click auf Übertragungspunkt ID --> Eigenschaften eines Übertragungspunktes werden dargestellt
         foreach (var item in _hitTextBlock)
         {
@@ -238,11 +242,11 @@ public partial class MainWindow
                 var punkt = _dlt!.Übertragungspunkte[index];
                 Array.Clear(_dlt.Übertragungspunkte[index].Zl);
                 Array.Clear(_dlt.Übertragungspunkte[index].Zr);
-                _punktlast = new DialogPunktlast(_dlt, index, Berechnung, DltVisuell)
+                _punktlast = new DialogPunktlast(_dlt, index, _berechnung, DltVisuell)
                 {
                     //Topmost = true, Owner = (Window)Parent,
                     Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) },
-                    Lastwert = { Text = (-punkt.Punktlast[3]).ToString("N2", CultureInfo.CurrentCulture) } 
+                    Lastwert = { Text = (-punkt.Punktlast[3]).ToString("N2", CultureInfo.CurrentCulture) }
                 };
                 _mittelpunkt = new Point(punkt.Position * _darstellung.Auflösung + _darstellung.PlazierungH,
                     _darstellung.PlazierungV1);
@@ -271,7 +275,7 @@ public partial class MainWindow
                 }
 
                 // Übertragungspunkt am Ende enthält Lastlänge und -wert
-                DialogGleichlast gleichlast = new(_dlt, endIndex)
+                DialogGleichlast gleichlast = new(_dlt, anfangIndex, endIndex, _berechnung)
                 {
                     Anfang = { Text = _dlt.Übertragungspunkte[anfangIndex].Position.ToString("G4") },
                     Länge = { Text = _dlt.Übertragungspunkte[endIndex].Lastlänge.ToString("G4") },
@@ -280,7 +284,7 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 gleichlast.ShowDialog();
                 DltVisuell.Children.Clear();
-                Berechnung?.Neuberechnung();
+                _berechnung?.Neuberechnung();
             }
 
             if (item.Name.Contains("Lager"))
@@ -297,7 +301,7 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 lager.ShowDialog();
                 DltVisuell.Children.Clear();
-                Berechnung?.Neuberechnung();
+                _berechnung?.Neuberechnung();
             }
 
             if (!item.Name.Contains("Momentenlinie")) continue;

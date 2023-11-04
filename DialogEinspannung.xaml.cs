@@ -32,7 +32,11 @@ public partial class DialogEinspannung
             _dlt.EndeFest = true;
             _dlt.AnfangFest = false;
         }
-
+        else
+        {
+            _dlt.EndeFest = false;
+            _dlt.AnfangFest = false;
+        }
         Close();
     }
 

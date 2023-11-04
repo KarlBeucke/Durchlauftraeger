@@ -1,0 +1,45 @@
+Kurzdoku für die Applikation "Durchlauftraeger"
+
+Button:
+enthalten jetzt "Tooltips", d.h. Kurzerklärung der Funktion, wenn Zeiger dorthin bewegt wird
+1. NEU				  - Eingabemaske für einen neuen Träger, löscht vorhandene Ausgabe
+2. Einspannung		  - Eingabemaske für neue Randbedingungen am Anfang und am Ende
+3. Lager			  - Eingabemaske für ein neues Auflager
+4. Punktlast		  - Eingabemaske zur Definition einer neuen Punktlast
+5. Gleichlast		  - Eingabemaske zur Definition einer neuen Gleichlast
+
+jede Modelländerung (Lager, Last) führt zu einer sofortigen Neuberechnung und
+grafischen Darstellung der Ergebnisse
+
+6. Neuberechnung 	  - explizite Veranlassung einer Neuberechnung mit aktuellen Modelldaten
+7. Übertragungspunkte - darstellen/abschalten aller Übertragungspunkte mit Nummer und Symbol (kleiner blauer Kreis)
+8. Momententexte	  - darstellen/abschalten aller Momententexte
+9. Querkrafttexte	  - darstellen/abschalten aller Querkrafttexte
+
+roter Pilotpunkt links oben - dient zur Veranschaulichung von Koordinatenänderungen
+
+interaktive Einflußnahme durch den Nutzer:
+- click mit Button links auf einen Text (Nummer) eines Übertragungspunktes
+  öffnet ein sogenanntes Pop-Up Fenster mit Zustandswerten des Übertragungspunktes
+- click mit Button rechts auf das Symbol schließt das Pop-Up Fenster
+
+- click mit Button links auf ein vorhandenes Modellobjekt (Last, Lager)
+  öffnet eine Eingabemaske mit den aktuellen Werten des angewählten Modellobjektes
+  diese können editiert werden
+  ein Lösch-Button in diesen Masken erlaubt das Löschen des aktuellen Objektes
+  
+- Spezialfall Punktlast, click auf Punktlast
+  öffnet eine Eingabemaske mit den aktuellen Werten der Punktlast
+  zusätzlich wird ein roter Pilotpunkt auf den Angriffspunkt der Punktlast plaziert
+  wird der Zeiger auf den roten Pilotpunkt bewegt, kann dieser interaktive horizontal bewegt werden
+  der angezeigte Koordinatenwert wird kontinuierlich aktualisiert
+  durch click mit Button rechts wird der Vorgang beendet
+  alle Werte in der Eingabemaske können noch editiert werden
+  mit "Ok" wird die Eingabe beendet und die Punktlast neu plaziert
+  eine Neuberechnung mit den aktualisierten Daten wird automatisch veranlasst
+  
+- click mit Button links auf einen Momentenverlauf
+  die Maximalwerte im Momentenverlauf unter Gleichlasten werden dargestellt
+  nochmaliger click blendet diese Darstellungen wieder aus
+  
+  

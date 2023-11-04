@@ -12,7 +12,6 @@ public partial class DialogPunktlast
     private readonly bool _exists;
     private double _position;
     private double _punktlastwert;
-    private Übertragungspunkt _übertragungsPunkt = null!;
     private readonly Berechnung? _berechnung;
 
     public DialogPunktlast(Modell dlt)
@@ -57,41 +56,44 @@ public partial class DialogPunktlast
                 _index = i;
                 break;
             }
-
+            // falls vorhanden, füge Lastwert hinzu
             if (vorhanden)
             {
                 _dlt.Übertragungspunkte[_index].Punktlast[3] = -_punktlastwert;
             }
+            // sonst, füge neuen Übertragungspunkt hinzu
             else
             {
                 var punktlast = new double[4];
                 punktlast[3] = -_punktlastwert;
                 var lk = new double[4];
                 Array.Copy(punktlast, lk, punktlast.Length);
-                _übertragungsPunkt = new Übertragungspunkt(_position, punktlast)
+                var übertragungsPunkt = new Übertragungspunkt(_position, punktlast)
                 {
                     Position = _position,
                     Typ = 1,
                     Punktlast = punktlast,
                     Lk = lk
                 };
-                _dlt.Übertragungspunkte.Add(_übertragungsPunkt);
+                _dlt.Übertragungspunkte.Add(übertragungsPunkt);
 
                 // ordne die Übertragungspunkte in aufsteigender x-Richtung
                 IComparer<Übertragungspunkt> comparer = new MainWindow.OrdneAufsteigendeKoordinaten();
                 _dlt.Übertragungspunkte.Sort(comparer);
-                _index = _dlt.Übertragungspunkte.IndexOf(_übertragungsPunkt);
+
+                // Punktlast im Bereich einer Gleichlast, erfordert Anpassung der Längen
+                _index = _dlt.Übertragungspunkte.IndexOf(übertragungsPunkt);
                 _dlt.Übertragungspunkte[_index].Lastwert = _dlt.Übertragungspunkte[_index + 1].Lastwert;
                 if (_dlt.Übertragungspunkte[_index].Lastwert > double.Epsilon)
                 {
                     _dlt.Übertragungspunkte[_index].Lastlänge = _dlt.Übertragungspunkte[_index].Position
-                                                              - _dlt.Übertragungspunkte[_index-1].Position;
+                                                              - _dlt.Übertragungspunkte[_index - 1].Position;
                     _dlt.Übertragungspunkte[_index].Linienlast = Linienlast(_dlt.Übertragungspunkte[_index].Lastlänge,
                         _dlt.Übertragungspunkte[_index].Lastwert);
-                    _dlt.Übertragungspunkte[_index + 1].Lastlänge = _dlt.Übertragungspunkte[_index+1].Position
+                    _dlt.Übertragungspunkte[_index + 1].Lastlänge = _dlt.Übertragungspunkte[_index + 1].Position
                                                                   - _dlt.Übertragungspunkte[_index].Position;
-                    _dlt.Übertragungspunkte[_index+1].Linienlast = Linienlast(_dlt.Übertragungspunkte[_index+1].Lastlänge,
-                        _dlt.Übertragungspunkte[_index+1].Lastwert);
+                    _dlt.Übertragungspunkte[_index + 1].Linienlast = Linienlast(_dlt.Übertragungspunkte[_index + 1].Lastlänge,
+                        _dlt.Übertragungspunkte[_index + 1].Lastwert);
                 }
             }
         }
@@ -106,7 +108,7 @@ public partial class DialogPunktlast
                 //var vorhanden = _dlt.Übertragungspunkte.Any(punkt 
                 //    => !(Math.Abs(punkt.Position - _position) > double.Epsilon));
                 var vorhanden = false;
-                var indexVorhanden=1;
+                var indexVorhanden = 1;
                 for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
                 {
                     if (Math.Abs(_dlt.Übertragungspunkte[i].Position - _position) > double.Epsilon) continue;
@@ -116,6 +118,8 @@ public partial class DialogPunktlast
                 }
                 var punktlast = new double[4];
                 punktlast[3] = -_punktlastwert;
+
+                // ggf. neuen Übertragungspunkt hinzufügen
                 if (!vorhanden)
                 {
                     var lk = new double[4];
@@ -127,24 +131,52 @@ public partial class DialogPunktlast
                         Punktlast = punktlast,
                         Lk = lk
                     };
-
-                    // falls dieser noch nicht existiert, füg neuen hinzu
+                    // falls dieser noch nicht existiert, füg neuen hinzu, entferne alten
                     _dlt.Übertragungspunkte.Add(lastangriffspunkt);
+                    if (_dlt.Übertragungspunkte[_index].Lastwert == 0 &&
+                                _dlt.Übertragungspunkte[_index + 1].Lastwert == 0)
+                        _dlt.Übertragungspunkte.RemoveAt(_index);
+                    else
+                        _dlt.Übertragungspunkte[_index].Punktlast[3] = 0;
+
+                    // ordne die Übertragungspunkte in aufsteigender x-Richtung
+                    IComparer<Übertragungspunkt> comparer = new MainWindow.OrdneAufsteigendeKoordinaten();
+                    _dlt.Übertragungspunkte.Sort(comparer);
+
+                    // Punktlast im Bereich einer Gleichlast, erfordert Anpassung der Längen
+                    _index = _dlt.Übertragungspunkte.IndexOf(lastangriffspunkt);
+                    _dlt.Übertragungspunkte[_index].Lastwert = _dlt.Übertragungspunkte[_index + 1].Lastwert;
+                    if (_dlt.Übertragungspunkte[_index].Lastwert > double.Epsilon)
+                    {
+                        _dlt.Übertragungspunkte[_index].Lastlänge = _dlt.Übertragungspunkte[_index].Position
+                                                                    - _dlt.Übertragungspunkte[_index - 1].Position;
+                        _dlt.Übertragungspunkte[_index].Linienlast = Linienlast(_dlt.Übertragungspunkte[_index].Lastlänge,
+                            _dlt.Übertragungspunkte[_index].Lastwert);
+                        _dlt.Übertragungspunkte[_index + 1].Lastlänge = _dlt.Übertragungspunkte[_index + 1].Position
+                                                                        - _dlt.Übertragungspunkte[_index].Position;
+                        _dlt.Übertragungspunkte[_index + 1].Linienlast = Linienlast(_dlt.Übertragungspunkte[_index + 1].Lastlänge,
+                            _dlt.Übertragungspunkte[_index + 1].Lastwert);
+                    }
                 }
+                // sonst ergänze Punktlast an vorhandenem Punkt, entferne "alten" Punkt
                 else
                 {
                     _dlt.Übertragungspunkte[indexVorhanden].Punktlast = punktlast;
-                    _dlt.Übertragungspunkte.RemoveAt(_index);
+                    if (_dlt.Übertragungspunkte[_index].Lastwert == 0 &&
+                                _dlt.Übertragungspunkte[_index + 1].Lastwert == 0)
+                        _dlt.Übertragungspunkte.RemoveAt(_index);
+                    else
+                        _dlt.Übertragungspunkte[_index].Punktlast = new double[4];
                 }
             }
 
             // check, ob der Übertragunsgpunkt auf einer Linienlast liegt
-            if (_dlt.Übertragungspunkte[_index+1].Lastwert == 0)
-                _dlt.Übertragungspunkte.RemoveAt(_index);
+            //if (_dlt.Übertragungspunkte[_index + 1].Lastwert == 0)
+            //    _dlt.Übertragungspunkte.RemoveAt(_index);
         }
         Close();
         _berechnung?.Neuberechnung();
-}
+    }
 
     private void BtnDialogCancel_Click(object sender, RoutedEventArgs e)
     {
@@ -156,9 +188,9 @@ public partial class DialogPunktlast
         switch (_dlt.Übertragungspunkte[_index].Lastlänge)
         {
             // Punktlast im Bereich einer Gleichlast
-            case > 0 
-            when _dlt.Übertragungspunkte[_index+1].Lastlänge > 0:
-                _dlt.Übertragungspunkte[_index+1].Lastlänge
+            case > 0
+            when _dlt.Übertragungspunkte[_index + 1].Lastlänge > 0:
+                _dlt.Übertragungspunkte[_index + 1].Lastlänge
                     += _dlt.Übertragungspunkte[_index].Lastlänge;
                 _dlt.Übertragungspunkte[_index + 1].Linienlast =
                     Linienlast(_dlt.Übertragungspunkte[_index + 1].Lastlänge,
@@ -166,11 +198,11 @@ public partial class DialogPunktlast
                 _dlt.Übertragungspunkte.RemoveAt(_index);
                 break;
             // Punktlast am Anfang einer Gleichlast
-            case 0 
-            when _dlt.Übertragungspunkte[_index+1].Lastlänge > 0:
+            case 0
+            when _dlt.Übertragungspunkte[_index + 1].Lastlänge > 0:
             // Punktlast am Ende einer Gleichlast
-            case > 0 
-                 when _dlt.Übertragungspunkte[_index+1].Lastlänge == 0:
+            case > 0
+                 when _dlt.Übertragungspunkte[_index + 1].Lastlänge == 0:
                 _dlt.Übertragungspunkte[_index].Punktlast = new double[4];
                 break;
             // Punktlast alleinstehend
@@ -178,7 +210,7 @@ public partial class DialogPunktlast
                 _dlt.Übertragungspunkte.RemoveAt(_index);
                 break;
         }
-        _dlt.KeineLast = MainWindow.Berechnung!.CheckLasten();
+        _dlt.KeineLast = _berechnung!.CheckLasten();
         _berechnung?.Neuberechnung();
         Close();
     }

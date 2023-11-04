@@ -431,8 +431,8 @@ public class Darstellung
 
             if (!(Math.Abs(_dlt.Übertragungspunkte[i].Lastlänge) > 0)) continue;
             // maxMoment unter Gleichlast = ql^2/8
-            var qll8 = _dlt.Übertragungspunkte[i].Lastwert * 
-                _dlt.Übertragungspunkte[i].Lastlänge*_dlt.Übertragungspunkte[i].Lastlänge/8;
+            var qll8 = _dlt.Übertragungspunkte[i].Lastwert *
+                _dlt.Übertragungspunkte[i].Lastlänge * _dlt.Übertragungspunkte[i].Lastlänge / 8;
             if (qll8 > maxMoment) maxMoment = qll8;
         }
         // am Ende ist nur Zl definiert
@@ -443,7 +443,7 @@ public class Darstellung
         }
 
         const int momentMaxScreen = 80;
-        _momentenAuflösung = momentMaxScreen/maxMoment;
+        _momentenAuflösung = momentMaxScreen / maxMoment;
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
         var nextPunkt = new Point(0, _dlt.Übertragungspunkte[0].Zr[2] * _momentenAuflösung);
@@ -474,7 +474,7 @@ public class Darstellung
                     // lokale x-Koordinate 0 <= x <= Lastlänge
                     var x = i * inkrement;
                     // M(x) = Ma + Qa*x - q*x*x/2
-                    var m = pim1.Zr[2] + pim1.Zr[3] * x - pi.Lastwert*(i*inkrement)*(i*inkrement)/2;
+                    var m = pim1.Zr[2] + pim1.Zr[3] * x - pi.Lastwert * (i * inkrement) * (i * inkrement) / 2;
                     var mPoint = new Point((pim1.Position + x) * Auflösung, m * _momentenAuflösung);
                     polyLinePointArray[i] = mPoint;
                 }
@@ -524,7 +524,7 @@ public class Darstellung
         var maxQuerkraft = Math.Abs(_dlt.Übertragungspunkte[0].Zr[3]);
         for (var i = 1; i < _dlt.Übertragungspunkte.Count - 1; i++)
         {
-            if (Math.Abs(_dlt.Übertragungspunkte[i].Zr[3])  > maxQuerkraft)
+            if (Math.Abs(_dlt.Übertragungspunkte[i].Zr[3]) > maxQuerkraft)
             {
                 maxQuerkraft = Math.Abs(_dlt.Übertragungspunkte[i].Zr[3]);
             }
@@ -541,7 +541,7 @@ public class Darstellung
         }
 
         const int querkraftMaxScreen = 50;
-        _querkraftAuflösung = querkraftMaxScreen/maxQuerkraft;
+        _querkraftAuflösung = querkraftMaxScreen / maxQuerkraft;
 
         pathFigure = new PathFigure { StartPoint = startPunkt };
         var querkraftWert = _dlt.Übertragungspunkte[0].Zr[3];
