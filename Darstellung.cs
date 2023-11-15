@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -786,17 +787,30 @@ public class Darstellung
             Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
             _visual.Children.Add(id);
             KnotenIDs.Add(id);
+
+            const int posOffset = 20;
+            var pos = new TextBlock
+            {
+                Name = "Pos",
+                FontSize = 12,
+                Text = _dlt.Übertragungspunkte[i].Position.ToString(CultureInfo.CurrentCulture),
+                Foreground = Black
+            };
+            Canvas.SetTop(pos, PlazierungV1 + posOffset);
+            Canvas.SetLeft(pos, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
+            _visual.Children.Add(pos);
+            KnotenIDs.Add(pos);
         }
     }
     public void ÜbertragungspunkteEntfernen()
     {
-        foreach (TextBlock id in KnotenIDs.Cast<TextBlock>())
+        foreach (var id in KnotenIDs.Cast<TextBlock>())
         {
             _visual.Children.Remove(id);
         }
 
         KnotenIDs.Clear();
-        foreach (Shape üPunktSymbol in ÜPunkte)
+        foreach (var üPunktSymbol in ÜPunkte.Cast<Shape>())
         {
             _visual.Children.Remove(üPunktSymbol);
         }

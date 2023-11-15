@@ -5,6 +5,7 @@ namespace Durchlauftraeger;
 public partial class DialogNeuerTräger
 {
     private readonly Modell _dlt;
+    public bool Ok = true;
     public DialogNeuerTräger(Modell dlt)
     {
         InitializeComponent();
@@ -96,6 +97,7 @@ public partial class DialogNeuerTräger
 
     private void BtnDialogCancel_Click(object sender, RoutedEventArgs e)
     {
+        Ok = false;
         Close();
     }
 }

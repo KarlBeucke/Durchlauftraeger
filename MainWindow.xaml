@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Durchlaufträgerberechnung Stand September 2023                                                                                        
+        Title="Durchlaufträgerberechnung Stand November 2023                                                                                        
                © Prof. Karl Beucke" Height="800" Width="1200">
     <ScrollViewer HorizontalScrollBarVisibility="Auto" Margin="0,0,0,0">
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">

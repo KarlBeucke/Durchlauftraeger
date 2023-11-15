@@ -49,12 +49,13 @@ public partial class MainWindow
         _dlt.KeineLast = true;
         _träger = new DialogNeuerTräger(_dlt) { Topmost = true, Owner = (Window)Parent };
         _träger.ShowDialog();
+        if (!_träger.Ok) return;
         _darstellung.FestlegungAuflösung();
         _berechnung?.Neuberechnung();
     }
     private void EinspannungÄndern(object sender, RoutedEventArgs e)
     {
-        DltVisuell.Children.Clear();
+        //DltVisuell.Children.Clear();
         _einspannung = new DialogEinspannung(_dlt)
         {
             Topmost = true,
@@ -99,14 +100,14 @@ public partial class MainWindow
     }
     private void NeuesLager(object sender, RoutedEventArgs e)
     {
-        DltVisuell.Children.Clear();
+        //DltVisuell.Children.Clear();
         _lager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
         _lager.ShowDialog();
         _berechnung?.Neuberechnung();
     }
     private void NeuePunktlast(object sender, RoutedEventArgs e)
     {
-        DltVisuell.Children.Clear();
+        //DltVisuell.Children.Clear();
         _dlt.KeineLast = false;
         _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
@@ -114,7 +115,7 @@ public partial class MainWindow
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
-        DltVisuell.Children.Clear();
+        //DltVisuell.Children.Clear();
         _dlt.KeineLast = false;
         _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _gleichlast.ShowDialog();
