@@ -33,83 +33,48 @@ public partial class DialogLager
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrEmpty(LagerPosition.Text)) _position = double.Parse(LagerPosition.Text);
-
-        // check, ob Lager sich unter Gleichlast befindet
-        foreach (var punkt in _dlt.Übertragungspunkte.
-                     Where(punkt => !(_position > punkt.Position)))
+        
+        // finde nächsten Übertragungspunkt nach der neuen Position
+        foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt => !(punkt.Position < _position)))
         {
-            // nextPunkt ist nächster Übertragungspunkt nach Lager
             _nextPunkt = punkt;
             _lastLängeAlt = _nextPunkt.Lastlänge;
             break;
         }
-        
-        // neues Lager
-        if (!_exists)
-        {
-            // finde Übertragungspunkt am Lagerpunkt
-            var vorhanden = false;
-            foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
-                         => !(Math.Abs(punkt.Position - _position) > double.Epsilon)))
-            {
-                vorhanden = true;
-                // falls dieser schon existiert, merk Lagerpunkt
-                _lagerPunkt = punkt;
-                break;
-            }
-            // bisher noch kein Übertragungspunkt am Lagerpunkt vorhanden
-            if (!vorhanden)
-            {
-                var lastWert = _nextPunkt.Lastwert;
-                if (_nextPunkt.Lastlänge > 0)
-                {
-                    _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
-                    _nextPunkt.Linienlast = 
-                        Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
-                }
 
-                var lastLänge = _lastLängeAlt - _nextPunkt.Lastlänge;
-                _lagerPunkt = new Übertragungspunkt(_position)
-                {
-                    Typ = 3,
-                    Lastwert = lastWert,
-                    Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge,
-                    Linienlast = Linienlast(lastLänge, lastWert)
-                };
-                _dlt.Übertragungspunkte.Add(_lagerPunkt);
-            }
-            // Lagerpunkt bisher nicht vorhanden
-            else
-            {
-                _lagerPunkt.Typ = 3;
-                _lagerPunkt.Lastlänge = _lastLängeAlt;
-            }
+        if (_exists) LagerLöschen();
+        // neues Lager, finde Übertragungspunkt am Lagerpunkt
+        var vorhanden = false;
+        foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
+                     => !(Math.Abs(punkt.Position - _position) > double.Epsilon)))
+        {
+            vorhanden = true;
+            _lagerPunkt = punkt;
+            break;
         }
-        // existierendes Lager mit index ausgewählt
-        else
+        // bisher noch kein Übertragungspunkt am Lagerpunkt vorhanden
+        if (!vorhanden)
         {
-            // Übertragungspunkt wird Lastpunkt, ggf. Längen zusamenführen
-            if(_dlt.Übertragungspunkte[_index+1].Lastlänge != 0)
-            {
-                _dlt.Übertragungspunkte[_index+1].Lastlänge += _dlt.Übertragungspunkte[_index].Lastlänge;
-                _dlt.Übertragungspunkte[_index].Typ = 1;
-            }
-            // Übertragungspunkt wird Lastpunkt
-            else if (_dlt.Übertragungspunkte[_index].Lastlänge == 0)
-            {
-                _dlt.Übertragungspunkte[_index].Typ = 1;
-            }
-            // entferne Lagerpunkt, wenn nicht unter Gleichlast
-            else
-            {
-                _dlt.Übertragungspunkte.RemoveAt(_index);
-            }
-
             _lagerPunkt = new Übertragungspunkt(_position)
             {
                 Typ = 3
             };
             _dlt.Übertragungspunkte.Add(_lagerPunkt);
+            if (_nextPunkt.Lastlänge > 0)
+            {
+                _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
+                _nextPunkt.Linienlast = 
+                    Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
+                _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
+                _lagerPunkt.Lastwert = _nextPunkt.Lastwert;
+                _lagerPunkt.Linienlast = 
+                    Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);}
+        }
+        // Übertragungspunkt vorhanden
+        else
+        {
+            _lagerPunkt.Typ = 3;
+            _lagerPunkt.Lastlänge = _lastLängeAlt;
         }
         Close();
     }
@@ -119,6 +84,12 @@ public partial class DialogLager
     }
 
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
+    {
+        LagerLöschen();
+        Close();
+    }
+
+    private void LagerLöschen()
     {
         // Übertragungspunkt wird Lastpunkt, ggf. Längen zusammenführen
         if(_dlt.Übertragungspunkte[_index+1].Lastlänge != 0)
@@ -140,7 +111,6 @@ public partial class DialogLager
                 _dlt.Übertragungspunkte[_index].Typ = 1;
                 break;
         }
-        Close();
     }
 
     private double[] Linienlast(double länge, double wert)
