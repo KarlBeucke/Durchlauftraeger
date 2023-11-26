@@ -16,8 +16,8 @@ public partial class DialogLager
     private double[] _linienlast = new double[4];
     public DialogLager(Modell dlt)
     {
-        InitializeComponent();
         _dlt = dlt;
+        InitializeComponent();
         _exists = false;
         LagerPosition.Focus();
     }
@@ -33,7 +33,7 @@ public partial class DialogLager
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrEmpty(LagerPosition.Text)) _position = double.Parse(LagerPosition.Text);
-        
+
         // finde nächsten Übertragungspunkt nach der neuen Position
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt => !(punkt.Position < _position)))
         {
@@ -60,15 +60,17 @@ public partial class DialogLager
                 Typ = 3
             };
             _dlt.Übertragungspunkte.Add(_lagerPunkt);
-            if (_nextPunkt.Lastlänge > 0)
+
+            if (_nextPunkt is { Lastlänge: > 0 })
             {
                 _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
-                _nextPunkt.Linienlast = 
+                _nextPunkt.Linienlast =
                     Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
                 _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
                 _lagerPunkt.Lastwert = _nextPunkt.Lastwert;
-                _lagerPunkt.Linienlast = 
-                    Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);}
+                _lagerPunkt.Linienlast =
+                    Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);
+            }
         }
         // Übertragungspunkt vorhanden
         else
@@ -92,25 +94,38 @@ public partial class DialogLager
     private void LagerLöschen()
     {
         // Übertragungspunkt wird Lastpunkt, ggf. Längen zusammenführen
-        if(_dlt.Übertragungspunkte[_index+1].Lastlänge != 0)
+        if (_index < _dlt.Übertragungspunkte.Count - 1)
         {
-            _dlt.Übertragungspunkte[_index+1].Lastlänge += _dlt.Übertragungspunkte[_index].Lastlänge;
-            _dlt.Übertragungspunkte[_index + 1].Linienlast = 
-                Linienlast(_dlt.Übertragungspunkte[_index+1].Lastlänge, _dlt.Übertragungspunkte[_index+1].Lastwert);
-            
-            if(_dlt.Übertragungspunkte[_index].Lastlänge > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
-            else _dlt.Übertragungspunkte[_index].Typ = 1;
+            if (_dlt.Übertragungspunkte[_index + 1].Lastlänge != 0)
+            {
+                _dlt.Übertragungspunkte[_index + 1].Lastlänge += _dlt.Übertragungspunkte[_index].Lastlänge;
+                _dlt.Übertragungspunkte[_index + 1].Linienlast =
+                    Linienlast(_dlt.Übertragungspunkte[_index + 1].Lastlänge, _dlt.Übertragungspunkte[_index + 1].Lastwert);
+
+                if (_dlt.Übertragungspunkte[_index].Lastlänge > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
+                else _dlt.Übertragungspunkte[_index].Typ = 1;
+            }
+            else switch (_dlt.Übertragungspunkte[_index].Lastlänge)
+                {
+                    // Übertragungspunkt wird Lastpunkt
+                    case 0:
+                        _dlt.Übertragungspunkte.RemoveAt(_index);
+                        break;
+                    case > 0:
+                        _dlt.Übertragungspunkte[_index].Typ = 1;
+                        break;
+                }
         }
         else switch (_dlt.Übertragungspunkte[_index].Lastlänge)
-        {
-            // Übertragungspunkt wird Lastpunkt
-            case 0:
-                _dlt.Übertragungspunkte.RemoveAt(_index);
-                break;
-            case > 0:
-                _dlt.Übertragungspunkte[_index].Typ = 1;
-                break;
-        }
+            {
+                // Übertragungspunkt wird Lastpunkt
+                case 0:
+                    _dlt.Übertragungspunkte.RemoveAt(_index);
+                    break;
+                case > 0:
+                    _dlt.Übertragungspunkte[_index].Typ = 1;
+                    break;
+            }
     }
 
     private double[] Linienlast(double länge, double wert)

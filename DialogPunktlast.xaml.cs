@@ -2,17 +2,22 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
+using Color = System.Windows.Media.Color;
 
 namespace Durchlauftraeger;
 
 public partial class DialogPunktlast
 {
     private readonly Modell _dlt;
+    private readonly Panel? _dltVisuell;
     private int _index;
     private readonly bool _exists;
     private double _position;
     private double _punktlastwert;
     private readonly Berechnung? _berechnung;
+    public readonly UIElement? Punkt;
 
     public DialogPunktlast(Modell dlt)
     {
@@ -33,16 +38,33 @@ public partial class DialogPunktlast
     {
         InitializeComponent();
         _dlt = dlt;
+        _dltVisuell = dltVisuell;
         _index = index;
         _exists = true;
+
+        Punkt = new Ellipse
+        {
+            Fill = new SolidColorBrush(Color.FromRgb(255, 0, 0)),
+            Width = 10,
+            Height = 10
+        };
+
         // aktiviere Ereignishandler für Canvas
-        dltVisuell.Background = System.Windows.Media.Brushes.Transparent;
+        dltVisuell.Background = Brushes.Transparent;
         _berechnung = berechnung;
     }
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrEmpty(Position.Text)) _position = double.Parse(Position.Text);
+        else return;
+        if (_position < 0 || _position > _dlt.Trägerlänge)
+        {
+            _ = MessageBox.Show("Position der Punktlast liegt außerhalb des Durchlaufträgers", " Eingabe Punktlast");
+            _dltVisuell?.Children.Remove(Punkt);
+            Close();
+            return;
+        }
         if (!string.IsNullOrEmpty(Lastwert.Text)) _punktlastwert = double.Parse(Lastwert.Text);
         // Lastangriffspunkt neu (existiert noch nicht)
         if (!_exists)
@@ -169,6 +191,10 @@ public partial class DialogPunktlast
                         _dlt.Übertragungspunkte[_index].Punktlast = new double[4];
                 }
             }
+            else
+            {
+                _dlt.Übertragungspunkte[_index].Punktlast[3] = -_punktlastwert;
+            }
 
             // check, ob der Übertragunsgpunkt auf einer Linienlast liegt
             //if (_dlt.Übertragungspunkte[_index + 1].Lastwert == 0)
@@ -180,11 +206,13 @@ public partial class DialogPunktlast
 
     private void BtnDialogCancel_Click(object sender, RoutedEventArgs e)
     {
+        _dltVisuell?.Children.Remove(Punkt);
         Close();
     }
 
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
     {
+        if (Position.Text == "") return;
         switch (_dlt.Übertragungspunkte[_index].Lastlänge)
         {
             // Punktlast im Bereich einer Gleichlast
@@ -227,6 +255,7 @@ public partial class DialogPunktlast
 
     private void PositionTest(object sender, RoutedEventArgs e)
     {
+        if (Position.Text == "") return;
         var position = double.Parse(Position.Text);
         if (!(position < 0) && !(position > _dlt.Trägerlänge)) return;
         Position.Text = "";

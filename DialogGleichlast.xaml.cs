@@ -36,8 +36,9 @@ public partial class DialogGleichlast
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(Anfang.Text)) _anfangNeu = double.Parse(Anfang.Text);
-        if (!string.IsNullOrEmpty(Länge.Text)) _länge = double.Parse(Länge.Text);
+        if (string.IsNullOrEmpty(Anfang.Text) || string.IsNullOrEmpty(Länge.Text)) return;
+        _anfangNeu = double.Parse(Anfang.Text);
+        _länge = double.Parse(Länge.Text);
         if (!string.IsNullOrEmpty(Lastwert.Text)) _lastwert = double.Parse(Lastwert.Text);
 
         // Lage der Gleichlast unverändert, nur Lastwert geändert
@@ -116,6 +117,17 @@ public partial class DialogGleichlast
             piE.Lastwert = _lastwert;
             piE.Linienlast = Linienlast(piE.Lastlänge, piE.Lastwert);
         }
+
+        // überlappende Gleichlasten werden nicht unterstützt
+        if (_dlt.Übertragungspunkte[_anfangIndex + 2].Lastlänge != 0 ||
+            _dlt.Übertragungspunkte[_endIndex + 1].Lastlänge != 0)
+        {
+            _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt",
+                            " Eingabe Gleichlast");
+            Anfang.Text = "";
+            Close();
+            return;
+        }
         Close();
         _berechnung?.Neuberechnung();
     }
@@ -137,6 +149,7 @@ public partial class DialogGleichlast
 
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
     {
+        if (Anfang.Text == "" || Länge.Text == "") return;
         var pi = _dlt.Übertragungspunkte[_endIndex];
         var indexA = 0;
 
@@ -173,18 +186,22 @@ public partial class DialogGleichlast
 
     private void AnfangTest(object sender, RoutedEventArgs e)
     {
+        if (Anfang.Text == "") return;
+
         // check, ob Anfangswert der Gleichlast ein Koordinatenwert ist
         if (!double.TryParse(Anfang.Text, out var anfangNeu))
         {
             Anfang.Text = "";
             return;
         }
+
         // neuer Anfangswert muss zwischen 0 und Trägerlänge liegen
-        if (anfangNeu < 0 && anfangNeu > _dlt.Trägerlänge)
+        if (anfangNeu < 0 || anfangNeu > _dlt.Trägerlänge)
         {
             _ = MessageBox.Show("Anfang der Gleichlast außerhalb des Trägers", "Eingabe einer Gleichlast");
             Anfang.Text = "";
         }
+
         // falls Anfangsposition geändert, ggf. Länge anpassen
         if (Länge.Text == "") return;
         // Anfangskoordinate nicht geändert, nur Länge der Gleichlast
@@ -209,7 +226,7 @@ public partial class DialogGleichlast
         // Ende der Gleichlast muss auf Träger liegen
         var ende = anfang + länge;
         if (!(ende > _dlt.Trägerlänge) && !(ende < anfang)) return;
-        _ = MessageBox.Show("Ende der Gleichlast vor Anfang oder außerhalb des Trägers ", "Eingabe einer Gleichlast");
+        _ = MessageBox.Show("Ende der Gleichlast außerhalb des Trägers ", "Eingabe einer Gleichlast");
         Länge.Text = "";
     }
 }

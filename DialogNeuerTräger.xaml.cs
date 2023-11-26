@@ -18,7 +18,7 @@ public partial class DialogNeuerTräger
         if (Gesamtlänge.Text.Length > 0) { _dlt.Trägerlänge = double.Parse(Gesamtlänge.Text); }
         else
         {
-            _ = MessageBox.Show("Länge muss definiert werden", "Durchlaufträger");
+            _ = MessageBox.Show("Länge muss positiv definiert werden", "Durchlaufträger");
             return;
         }
 

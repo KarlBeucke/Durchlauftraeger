@@ -56,6 +56,11 @@ public partial class MainWindow
     private void EinspannungÄndern(object sender, RoutedEventArgs e)
     {
         //DltVisuell.Children.Clear();
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         _einspannung = new DialogEinspannung(_dlt)
         {
             Topmost = true,
@@ -101,6 +106,11 @@ public partial class MainWindow
     private void NeuesLager(object sender, RoutedEventArgs e)
     {
         //DltVisuell.Children.Clear();
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         _lager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
         _lager.ShowDialog();
         _berechnung?.Neuberechnung();
@@ -108,17 +118,29 @@ public partial class MainWindow
     private void NeuePunktlast(object sender, RoutedEventArgs e)
     {
         //DltVisuell.Children.Clear();
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         _dlt.KeineLast = false;
         _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
+        if (_punktlast.Position.Text == "") return;
         _berechnung?.Neuberechnung();
     }
     private void NeueGleichlast(object sender, RoutedEventArgs e)
     {
         //DltVisuell.Children.Clear();
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         _dlt.KeineLast = false;
         _gleichlast = new DialogGleichlast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _gleichlast.ShowDialog();
+        if (_gleichlast.Anfang.Text == "") return;
         _berechnung?.Neuberechnung();
     }
 
@@ -133,11 +155,21 @@ public partial class MainWindow
 
     private void NeueBerechnung(object sender, RoutedEventArgs e)
     {
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         _berechnung?.Neuberechnung();
     }
 
     private void MomentenTexteAnzeigen(object sender, RoutedEventArgs e)
     {
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         if (_momentenTexteAn)
         {
             _darstellung.MomentenTexteEntfernen();
@@ -151,6 +183,11 @@ public partial class MainWindow
     }
     private void QuerkraftTexteAnzeigen(object sender, RoutedEventArgs e)
     {
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         if (_querkraftTexteAn)
         {
             _darstellung.QuerkraftTexteEntfernen();
@@ -165,6 +202,11 @@ public partial class MainWindow
 
     private void ÜbertragungspunkteAnzeigen(object sender, RoutedEventArgs e)
     {
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            return;
+        }
         if (_üPunkteAn)
         {
             _darstellung.ÜbertragungspunkteEntfernen();
@@ -251,9 +293,12 @@ public partial class MainWindow
                 };
                 _mittelpunkt = new Point(punkt.Position * _darstellung.Auflösung + _darstellung.PlazierungH,
                     _darstellung.PlazierungV1);
-                Canvas.SetLeft(Punkt, _mittelpunkt.X - Punkt.Width / 2);
-                Canvas.SetTop(Punkt, _mittelpunkt.Y - Punkt.Height / 2);
-                DltVisuell.Children.Add(Punkt);
+                Canvas.SetLeft(_punktlast.Punkt!, _mittelpunkt.X - 5);
+                Canvas.SetTop(_punktlast.Punkt!, _mittelpunkt.Y - 5);
+                DltVisuell.Children.Add(_punktlast.Punkt!);
+                _punktlast.Punkt!.MouseEnter += new MouseEventHandler(Punkt_MouseEnter);
+                _punktlast.Punkt.MouseMove += new MouseEventHandler(Punkt_MouseMove);
+                _punktlast.Punkt.MouseRightButtonDown += new MouseButtonEventHandler(Punkt_RightButtonDown);
                 _punktlast.Show();
             }
 
@@ -302,6 +347,15 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 lager.ShowDialog();
                 DltVisuell.Children.Clear();
+                if (_dlt.Übertragungspunkte[index].Position > _dlt.Trägerlänge)
+                {
+                    _dlt.Trägerlänge = _dlt.Übertragungspunkte[index].Position;
+                }
+                else if (_dlt.Übertragungspunkte[^1].Position < _dlt.Trägerlänge)
+                {
+                    _dlt.Trägerlänge = _dlt.Übertragungspunkte[^1].Position;
+                }
+                _darstellung.FestlegungAuflösung();
                 _berechnung?.Neuberechnung();
             }
 
@@ -321,10 +375,12 @@ public partial class MainWindow
             }
         }
     }
+
     private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         MyPopup.IsOpen = false;
     }
+
     private HitTestResultBehavior HitTestCallBack(HitTestResult result)
     {
         //_hitList=new List<Shape>();
@@ -368,9 +424,9 @@ public partial class MainWindow
         }
     }
 
-    private void Punkt_MouseEnter(object sender, MouseEventArgs e)
+    private void Punkt_MouseEnter(object sender, RoutedEventArgs routedEventArgs)
     {
-        Punkt.CaptureMouse();
+        Punkt?.CaptureMouse();
         _isDragging = true;
         MyPopup.IsOpen = false;
     }
@@ -395,8 +451,8 @@ public partial class MainWindow
 
         var mittelpunkt = new Point(e.GetPosition(DltVisuell).X, e.GetPosition(DltVisuell).Y);
 
-        Canvas.SetLeft(knoten, mittelpunkt.X - Punkt.Width / 2);
-        Canvas.SetTop(knoten, mittelpunkt.Y - Punkt.Height / 2);
+        Canvas.SetLeft(knoten, mittelpunkt.X - 5);
+        Canvas.SetTop(knoten, mittelpunkt.Y - 5);
 
         var koordinate = _darstellung.TransformBildPunkt(mittelpunkt);
         _punktlast!.Position.Text = koordinate[0].ToString("N2", CultureInfo.CurrentCulture);
@@ -404,7 +460,7 @@ public partial class MainWindow
 
     private void Punkt_RightButtonDown(object sender, MouseButtonEventArgs e)
     {
-        Punkt.ReleaseMouseCapture();
+        Punkt?.ReleaseMouseCapture();
         _isDragging = false;
     }
 }
