@@ -70,7 +70,7 @@
             </Grid>
             <Canvas x:Name="DltVisuell" Height="750" Width="1150" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     MouseLeftButtonDown="OnMouseLeftButtonDown"
-                    MouseRightButtonDown="OnMouseRightButtonDown">
+                    MouseRightButtonDown="OnMouseRightButtonDown" Focusable="True">
                 <Popup x:Name="MyPopup" Placement="MousePoint">
                     <TextBlock x:Name="MyPopupText" Background="LightBlue" Foreground="Blue" Padding="10"/>
                 </Popup>

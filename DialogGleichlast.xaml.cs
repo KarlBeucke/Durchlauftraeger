@@ -8,12 +8,11 @@ namespace Durchlauftraeger;
 public partial class DialogGleichlast
 {
     private readonly Modell _dlt;
-    private readonly double _anfang;
-    private double _anfangNeu;
+    private readonly bool _exists;
+    private double _anfang;
     private double _länge;
     private double _lastwert;
     private int _endIndex, _anfangIndex;
-    private readonly int _anfangAlt;
     private double[] _linienlast = new double[4];
     private readonly Berechnung? _berechnung;
 
@@ -21,92 +20,130 @@ public partial class DialogGleichlast
     {
         InitializeComponent();
         _dlt = dlt;
+        _exists = false;
         Anfang.Focus();
     }
-    public DialogGleichlast(Modell dlt, int anfangAlt, int endIndex, Berechnung? berechnung)
+    public DialogGleichlast(Modell dlt, int anfangIndex, int endIndex, Berechnung? berechnung)
     {
         InitializeComponent();
         _dlt = dlt;
-        _anfangAlt = anfangAlt;
+        _exists = true;
+        _anfangIndex = anfangIndex;
         _endIndex = endIndex;
         _berechnung = berechnung;
-        _anfang = _dlt.Übertragungspunkte[_anfangAlt].Position;
+        _anfang = _dlt.Übertragungspunkte[_anfangIndex].Position;
         Anfang.Focus();
     }
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
+
         if (string.IsNullOrEmpty(Anfang.Text) || string.IsNullOrEmpty(Länge.Text)) return;
-        _anfangNeu = double.Parse(Anfang.Text);
+        _anfang = double.Parse(Anfang.Text);
         _länge = double.Parse(Länge.Text);
         if (!string.IsNullOrEmpty(Lastwert.Text)) _lastwert = double.Parse(Lastwert.Text);
 
         // Lage der Gleichlast unverändert, nur Lastwert geändert
-        if (Math.Abs(_dlt.Übertragungspunkte[_endIndex].Position - (_anfang + _länge)) < double.Epsilon)
+        if (_exists)
         {
             var piE = _dlt.Übertragungspunkte[_endIndex];
-            piE.Lastwert = _lastwert;
-            piE.Linienlast = Linienlast(piE.Lastlänge, piE.Lastwert);
-            Close();
-            return;
+            if (Math.Abs(_dlt.Übertragungspunkte[_endIndex].Position - (_anfang + _länge)) < double.Epsilon
+                && Math.Abs(_dlt.Übertragungspunkte[_anfangIndex].Position - _anfang) < double.Epsilon)
+            {
+                piE.Lastwert = _lastwert;
+                piE.Linienlast = Werkzeuge.Linienlast(piE.Lastlänge, piE.Lastwert);
+                Close();
+                return;
+            }
+
+            LöschLinienlast();
         }
 
+        // überlappende Gleichlasten werden nicht unterstützt
+        int i;
+        // check Anfangspunkt der Gleichlast
+        for (i = 1; i < _dlt.Übertragungspunkte.Count; i++)
+        {
+            var pi = _dlt.Übertragungspunkte[i];
+            if (!(pi.Position > _anfang)) continue;
+            if (pi.Lastlänge > 0)
+            {
+                _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt", " Eingabe Gleichlast");
+                Anfang.Text = "";
+                Close();
+                return;
+            }
+            break;
+        }
+        // check Endpunkt der Gleichlast
+        for (var k = i; k < _dlt.Übertragungspunkte.Count; k++)
+        {
+            var pk = _dlt.Übertragungspunkte[k];
+            if (!(pk.Position >= _anfang + _länge)) continue;
+            if (pk.Lastlänge > 0)
+            {
+                _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt",
+                    " Eingabe Gleichlast");
+                Anfang.Text = "";
+                Close();
+                return;
+            }
+            break;
+        }
+
+        // neue Gleichlast hinzufügen
         // finde Übertragungspunkt am Anfang der Gleichlast
-        var exists = false;
+        var vorhanden = false;
         Übertragungspunkt? übertragungsPunktA = null, übertragungsPunktE = null;
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
-                     => !(Math.Abs(punkt.Position - _anfangNeu) > double.Epsilon)))
+                     => !(Math.Abs(punkt.Position - _anfang) > double.Epsilon)))
         {
-            exists = true;
+            vorhanden = true;
             // falls dieser schon existiert, merk Anfangspunkt der Gleichlast
             übertragungsPunktA = punkt;
             break;
         }
-        if (!exists)
+        if (!vorhanden)
         {
-            übertragungsPunktA = new Übertragungspunkt(_anfangNeu)
-            {
-                Typ = 1
-            };
-            // falls dieser noch nicht existiert, füg ihn hinzu, lösch alten
+            übertragungsPunktA = new Übertragungspunkt(_anfang) { Typ = 1 };
             _dlt.Übertragungspunkte.Add(übertragungsPunktA);
-            if (_dlt.Übertragungspunkte[_anfangAlt].Typ == 1)
-                _dlt.Übertragungspunkte.RemoveAt(_anfangAlt);
         }
 
         // finde Übertragungspunkt am Ende der Gleichlast, evtl. neue Länge
-        _linienlast = Linienlast(_länge, _lastwert);
-        exists = false;
+        _linienlast = Werkzeuge.Linienlast(_länge, _lastwert);
+        vorhanden = false;
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
-                     => !(Math.Abs(punkt.Position - (_anfangNeu + _länge)) > double.Epsilon)))
+                     => !(Math.Abs(punkt.Position - (_anfang + _länge)) > double.Epsilon)))
         {
-            exists = true;
+            vorhanden = true;
             übertragungsPunktE = punkt;
             break;
         }
-        // ggf. neuen Endpunkt hinzufügen
-        if (!exists)
+
+        // neuen Endpunkt hinzufügen
+        if (!vorhanden)
         {
-            übertragungsPunktE = new Übertragungspunkt(_anfangNeu + _länge)
+            übertragungsPunktE = new Übertragungspunkt(_anfang + _länge)
             {
                 Typ = 1,
                 Lastlänge = _länge,
                 Lastwert = _lastwert,
-                Linienlast = Linienlast(_länge, _lastwert)
+                Linienlast = _linienlast
             };
             _dlt.Übertragungspunkte.Add(übertragungsPunktE);
-            // lösch "alten" Endpunkt falls kein Lager
-            if (_endIndex > 0 && (_dlt.Übertragungspunkte[_endIndex].Typ == 1
-                || _dlt.Übertragungspunkte[_endIndex].Lastlänge == 0))
-            {
-                _dlt.Übertragungspunkte.RemoveAt(_endIndex);
-            }
         }
+        else
+        {
+            übertragungsPunktE!.Lastlänge = _länge;
+            übertragungsPunktE.Lastwert = _lastwert;
+            übertragungsPunktE.Linienlast = _linienlast;
+        }
+
         // ordne die Übertragungspunkte in aufsteigender x-Richtung
         IComparer<Übertragungspunkt> comparer = new MainWindow.OrdneAufsteigendeKoordinaten();
         _dlt.Übertragungspunkte.Sort(comparer);
-        if (übertragungsPunktA != null) _anfangIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktA);
-        if (übertragungsPunktE != null) _endIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktE);
+        _anfangIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktA!);
+        _endIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktE);
 
         // ggf. Längen an Übertragungspunkten zwischen Anfang und Ende anpassen
         for (var k = 0; k < _endIndex - _anfangIndex; k++)
@@ -115,31 +152,10 @@ public partial class DialogGleichlast
             var piA = _dlt.Übertragungspunkte[_endIndex - k - 1];
             piE.Lastlänge = piE.Position - piA.Position;
             piE.Lastwert = _lastwert;
-            piE.Linienlast = Linienlast(piE.Lastlänge, piE.Lastwert);
-        }
-
-        // überlappende Gleichlasten werden nicht unterstützt
-        if (_dlt.Übertragungspunkte[_anfangIndex + 2].Lastlänge != 0 ||
-            _dlt.Übertragungspunkte[_endIndex + 1].Lastlänge != 0)
-        {
-            _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt",
-                            " Eingabe Gleichlast");
-            Anfang.Text = "";
-            Close();
-            return;
+            piE.Linienlast = Werkzeuge.Linienlast(piE.Lastlänge, piE.Lastwert);
         }
         Close();
         _berechnung?.Neuberechnung();
-    }
-    private double[] Linienlast(double länge, double wert)
-    {
-        _linienlast = new double[4];
-        const double ei = 1;
-        _linienlast[0] = wert * Math.Pow(länge, 4) / 24 / ei;
-        _linienlast[1] = wert * Math.Pow(länge, 3) / 6 / ei;
-        _linienlast[2] = -wert * Math.Pow(länge, 2) / 2;
-        _linienlast[3] = -wert * länge;
-        return _linienlast;
     }
 
     private void BtnDialogCancel_Click(object sender, RoutedEventArgs e)
@@ -150,6 +166,14 @@ public partial class DialogGleichlast
     private void BtnLöschen_Click(object sender, RoutedEventArgs e)
     {
         if (Anfang.Text == "" || Länge.Text == "") return;
+        LöschLinienlast();
+        _dlt.KeineLast = _berechnung!.CheckLasten();
+        Close();
+        _berechnung?.Neuberechnung();
+    }
+
+    private void LöschLinienlast()
+    {
         var pi = _dlt.Übertragungspunkte[_endIndex];
         var indexA = 0;
 
@@ -175,13 +199,10 @@ public partial class DialogGleichlast
         }
 
         // Übertragungspunkt am Anfang löschen, falls dort keine Punktlast ist
-        if (piA.Typ == 1 && piA.Punktlast.Sum() == 0)
+        if (piA.Typ == 1 && piA.Lastlänge == 0 && piA.Punktlast.Sum() == 0)
         {
             _dlt.Übertragungspunkte.RemoveAt(indexA);
         }
-        _dlt.KeineLast = _berechnung!.CheckLasten();
-        Close();
-        _berechnung?.Neuberechnung();
     }
 
     private void AnfangTest(object sender, RoutedEventArgs e)

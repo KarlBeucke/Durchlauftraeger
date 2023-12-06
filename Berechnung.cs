@@ -254,7 +254,7 @@ public class Berechnung
         if (gaussSolver.Decompose()) gaussSolver.Solve();
         piA.Zr = Werkzeuge.MatrixVectorMultiply(zAnfang, rs);
 
-        // Zustandsvektoren im Feld
+        // Zustandsvektor am Ende durch Übertragung des bekannten Anfangsvektos
         for (var index = 1; index < _dlt.Übertragungspunkte.Count; index++)
         {
             var pkE = _dlt.Übertragungspunkte[index];
@@ -265,7 +265,7 @@ public class Berechnung
             pkE.Zr = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Punktlast);
         }
 
-        // erneute Übertragung des Zustandsvektors
+        // Zustandsvektoren im Feld durch Übertragung der Zustandsvektoren
         for (var k = 1; k < _dlt.Übertragungspunkte.Count; k++)
         {
             var pik = _dlt.Übertragungspunkte[k];

@@ -1,4 +1,6 @@
-﻿namespace Durchlauftraeger;
+﻿using System;
+
+namespace Durchlauftraeger;
 
 public static class Werkzeuge
 {
@@ -9,6 +11,16 @@ public static class Werkzeuge
                              { 0, 0,    1      ,l},
                              { 0, 0,    0      ,1}};
         return matrix;
+    }
+    public static double[] Linienlast(double länge, double wert)
+    {
+        const double ei = 1;
+        var linienlast = new double[4];
+        linienlast[0] = wert * Math.Pow(länge, 4) / 24 / ei;
+        linienlast[1] = wert * Math.Pow(länge, 3) / 6 / ei;
+        linienlast[2] = -wert * Math.Pow(länge, 2) / 2;
+        linienlast[3] = -wert * länge;
+        return linienlast;
     }
     public static double[] VectorVectorAdd(double[] vec1, double[] vec2)
     {

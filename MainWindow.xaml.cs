@@ -19,9 +19,10 @@ public partial class MainWindow
     private DialogNeuerTräger? _träger;
     private DialogEinspannung? _einspannung;
     private DialogLager? _lager;
-    private DialogPunktlast? _punktlast;
+    private DialogEinzellast? _punktlast;
     private DialogGleichlast? _gleichlast;
     private bool _momentenTexteAn, _momentMaxTexteAn, _querkraftTexteAn, _üPunkteAn;
+    private bool _leftClick = true;
 
     private Point _mittelpunkt;
     private bool _isDragging;
@@ -124,7 +125,7 @@ public partial class MainWindow
             return;
         }
         _dlt.KeineLast = false;
-        _punktlast = new DialogPunktlast(_dlt) { Topmost = true, Owner = (Window)Parent };
+        _punktlast = new DialogEinzellast(_dlt) { Topmost = true, Owner = (Window)Parent };
         _punktlast.ShowDialog();
         if (_punktlast.Position.Text == "") return;
         _berechnung?.Neuberechnung();
@@ -221,6 +222,8 @@ public partial class MainWindow
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        _leftClick = !_leftClick;
+        if (_leftClick) return;
         _hitList = new List<Shape>();
         _hitTextBlock.Clear();
         var hitPoint = e.GetPosition(DltVisuell);
@@ -285,9 +288,10 @@ public partial class MainWindow
                 var punkt = _dlt!.Übertragungspunkte[index];
                 Array.Clear(_dlt.Übertragungspunkte[index].Zl);
                 Array.Clear(_dlt.Übertragungspunkte[index].Zr);
-                _punktlast = new DialogPunktlast(_dlt, index, _berechnung, DltVisuell)
+                _punktlast = new DialogEinzellast(_dlt, index, _berechnung, DltVisuell)
                 {
-                    //Topmost = true, Owner = (Window)Parent,
+                    Topmost = true,
+                    Owner = (Window)Parent,
                     Position = { Text = punkt.Position.ToString("N2", CultureInfo.CurrentCulture) },
                     Lastwert = { Text = (-punkt.Punktlast[3]).ToString("N2", CultureInfo.CurrentCulture) }
                 };
@@ -296,9 +300,12 @@ public partial class MainWindow
                 Canvas.SetLeft(_punktlast.Punkt!, _mittelpunkt.X - 5);
                 Canvas.SetTop(_punktlast.Punkt!, _mittelpunkt.Y - 5);
                 DltVisuell.Children.Add(_punktlast.Punkt!);
-                _punktlast.Punkt!.MouseEnter += new MouseEventHandler(Punkt_MouseEnter);
-                _punktlast.Punkt.MouseMove += new MouseEventHandler(Punkt_MouseMove);
-                _punktlast.Punkt.MouseRightButtonDown += new MouseButtonEventHandler(Punkt_RightButtonDown);
+                // MouseEventHandler
+                _punktlast.Punkt!.MouseEnter += Punkt_MouseEnter;
+                _punktlast.Punkt.MouseMove += Punkt_MouseMove;
+                // MouseButtonEventHandler
+                _punktlast.Punkt.MouseRightButtonDown += Punkt_RightButtonDown;
+                _punktlast.Topmost = true;
                 _punktlast.Show();
             }
 
@@ -383,7 +390,6 @@ public partial class MainWindow
 
     private HitTestResultBehavior HitTestCallBack(HitTestResult result)
     {
-        //_hitList=new List<Shape>();
         var intersectionDetail = ((GeometryHitTestResult)result).IntersectionDetail;
 
         switch (intersectionDetail)
@@ -416,7 +422,7 @@ public partial class MainWindow
                         _hitList?.Add(hit);
                         break;
                 }
-                return HitTestResultBehavior.Continue;
+                return HitTestResultBehavior.Stop;
             case IntersectionDetail.NotCalculated:
                 return HitTestResultBehavior.Continue;
             default:

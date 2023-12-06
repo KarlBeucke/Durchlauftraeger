@@ -13,7 +13,6 @@ public partial class DialogLager
     private readonly int _index;
     private readonly bool _exists;
     private double _position;
-    private double[] _linienlast = new double[4];
     public DialogLager(Modell dlt)
     {
         _dlt = dlt;
@@ -33,6 +32,7 @@ public partial class DialogLager
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrEmpty(LagerPosition.Text)) _position = double.Parse(LagerPosition.Text);
+        if (_exists) LagerLöschen();
 
         // finde nächsten Übertragungspunkt nach der neuen Position
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt => !(punkt.Position < _position)))
@@ -42,7 +42,6 @@ public partial class DialogLager
             break;
         }
 
-        if (_exists) LagerLöschen();
         // neues Lager, finde Übertragungspunkt am Lagerpunkt
         var vorhanden = false;
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
@@ -65,11 +64,11 @@ public partial class DialogLager
             {
                 _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
                 _nextPunkt.Linienlast =
-                    Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
+                    Werkzeuge.Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
                 _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
                 _lagerPunkt.Lastwert = _nextPunkt.Lastwert;
                 _lagerPunkt.Linienlast =
-                    Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);
+                    Werkzeuge.Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);
             }
         }
         // Übertragungspunkt vorhanden
@@ -93,49 +92,22 @@ public partial class DialogLager
 
     private void LagerLöschen()
     {
+        var pi = _dlt.Übertragungspunkte[_index];
+        var pip1 = _dlt.Übertragungspunkte[_index+1];
+        // freie Enden werden nicht unterstützt
+        if (_index <= 0 || _index >= _dlt.Übertragungspunkte.Count - 1) return;
+
         // Übertragungspunkt wird Lastpunkt, ggf. Längen zusammenführen
-        if (_index < _dlt.Übertragungspunkte.Count - 1)
+        if (pip1.Lastlänge != 0)
         {
-            if (_dlt.Übertragungspunkte[_index + 1].Lastlänge != 0)
+            if (Math.Abs(pip1.Lastwert - pi.Lastwert) < double.Epsilon)
             {
-                _dlt.Übertragungspunkte[_index + 1].Lastlänge += _dlt.Übertragungspunkte[_index].Lastlänge;
-                _dlt.Übertragungspunkte[_index + 1].Linienlast =
-                    Linienlast(_dlt.Übertragungspunkte[_index + 1].Lastlänge, _dlt.Übertragungspunkte[_index + 1].Lastwert);
-
-                if (_dlt.Übertragungspunkte[_index].Lastlänge > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
-                else _dlt.Übertragungspunkte[_index].Typ = 1;
+                pip1.Lastlänge += _dlt.Übertragungspunkte[_index].Lastlänge;
+                pip1.Linienlast = Werkzeuge.Linienlast(pip1.Lastlänge, pip1.Lastwert);
+                _dlt.Übertragungspunkte.RemoveAt(_index);
             }
-            else switch (_dlt.Übertragungspunkte[_index].Lastlänge)
-                {
-                    // Übertragungspunkt wird Lastpunkt
-                    case 0:
-                        _dlt.Übertragungspunkte.RemoveAt(_index);
-                        break;
-                    case > 0:
-                        _dlt.Übertragungspunkte[_index].Typ = 1;
-                        break;
-                }
+            else pi.Typ = 1;
         }
-        else switch (_dlt.Übertragungspunkte[_index].Lastlänge)
-            {
-                // Übertragungspunkt wird Lastpunkt
-                case 0:
-                    _dlt.Übertragungspunkte.RemoveAt(_index);
-                    break;
-                case > 0:
-                    _dlt.Übertragungspunkte[_index].Typ = 1;
-                    break;
-            }
-    }
-
-    private double[] Linienlast(double länge, double wert)
-    {
-        _linienlast = new double[4];
-        const double ei = 1;
-        _linienlast[0] = wert * Math.Pow(länge, 4) / 24 / ei;
-        _linienlast[1] = wert * Math.Pow(länge, 3) / 6 / ei;
-        _linienlast[2] = -wert * Math.Pow(länge, 2) / 2;
-        _linienlast[3] = -wert * länge;
-        return _linienlast;
+        else if (pi.Lastlänge != 0) pi.Typ = 1;
     }
 }
