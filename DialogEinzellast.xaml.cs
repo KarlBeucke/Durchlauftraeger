@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Color = System.Windows.Media.Color;
 
 namespace Durchlauftraeger;
 
@@ -32,8 +31,8 @@ public partial class DialogEinzellast
         _dlt = dlt;
         _exists = true;
         _index = index;
+        Position.Focus();
     }
-
     public DialogEinzellast(Modell dlt, int index, Berechnung? berechnung, Panel dltVisuell)
     {
         InitializeComponent();
@@ -48,9 +47,10 @@ public partial class DialogEinzellast
             Width = 10,
             Height = 10
         };
+        Position.Focus();
 
         // aktiviere Ereignishandler für Canvas
-        dltVisuell.Background = Brushes.Transparent;
+        //dltVisuell.Background = Brushes.Transparent;
         _berechnung = berechnung;
     }
 
@@ -59,13 +59,13 @@ public partial class DialogEinzellast
         if (!double.TryParse(Position.Text, out _position))
         {
             Position.Text = "";
-            Close();
+            _ = MessageBox.Show("Lastposition muss definiert sein muss definiert sein", "Durchlaufträger");
             return;
         }
         if (!double.TryParse(Lastwert.Text, out _punktlastwert))
         {
             Lastwert.Text = "";
-            Close();
+            _ = MessageBox.Show("Lastwert muss definiert sein muss definiert sein", "Durchlaufträger");
             return;
         }
 
@@ -190,11 +190,15 @@ public partial class DialogEinzellast
 
     private void PositionTest(object sender, RoutedEventArgs e)
     {
-        if (Position.Text == "") return;
-        if (!double.TryParse(Position.Text, out var position)) { Position.Text = ""; return; }
+        if (!double.TryParse(Position.Text, out var position))
+        {
+            _ = MessageBox.Show("Lastposition muss definiert sein", "Eingabe einer Einzellast",
+            MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+            Position.Text = ""; return;
+        }
         if (!(position < 0) && !(position > _dlt.Trägerlänge)) return;
         Position.Text = "";
-        _ = MessageBox.Show("Lastposition außerhalb des Trägers", "Eingabe einer Punktlast",
+        _ = MessageBox.Show("Lastposition außerhalb des Trägers", "Eingabe einer Einzellast",
             MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
     }
 }

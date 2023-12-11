@@ -15,20 +15,22 @@
             <RowDefinition Height="35" />
             <RowDefinition Height="30" />
         </Grid.RowDefinitions>
-        <Label Grid.Row="1" Grid.Column="0" Margin="0,5,0,0">Lastwert der Punktlast</Label>
+        <Label Grid.Row="0" Grid.Column="0" Margin="0,7,0,0" Height="28" VerticalAlignment="Top">Position der Einzellast</Label>
+        <TextBox Name="Position" Grid.Row="0" Grid.Column="1" Margin="10,10,0,0" Height="22" 
+                 VerticalAlignment="Top" HorizontalAlignment="Left" Width="32" LostFocus="PositionTest"/>
+        <Separator Grid.Column="0" Grid.ColumnSpan="2" Margin="0,48,0,0" Grid.Row="1" Height="1" VerticalAlignment="Top" />
+
+        <Label Grid.Row="1" Grid.Column="0" Margin="0,0,0,1" >Lastwert der Einzellast</Label>
+
         <TextBox Name="Lastwert" Grid.Row="1" Grid.Column="1" Margin="10,0,0,0" Height="22" 
                  VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
-        <Separator Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="0,47,0,34" Grid.RowSpan="2" />
-        <Label Grid.Row="0" Grid.Column="0" Margin="0,0,0,0">Position der Einzellast</Label>
-        <Label Grid.Row="0" Grid.Column="0" Margin="0,15,0,0">auf dem Durchlaufträger</Label>
-        <TextBox Name="Position" Grid.Row="0" Grid.Column="1" Margin="10,0,0,0" Height="22" 
-                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32" LostFocus="PositionTest"/>
-        <Separator Grid.Column="0" Grid.Row="1" Height="1" Grid.ColumnSpan="2" Margin="0,48,0,1" />
+        <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,49" />
+
         <Button Grid.Row="2" Grid.Column="0"  Height="26"
                 Click="BtnLöschen_Click" VerticalAlignment="Center" Margin="10,0,132,0">_löschen</Button>
         <Button IsDefault="True" Grid.Row="2" Grid.Column="1"  Height="26"
                 Click="BtnDialogOk_Click" VerticalAlignment="Center" Margin="35,0,31,0">_Ok</Button>
         <Button Grid.Column="0" Grid.Row="2" Height="26" Margin="170,0,0,0" HorizontalAlignment="Left"
-                Click="BtnDialogCancel_Click" VerticalAlignment="Center" Grid.ColumnSpan="2">_Abbrechen</Button>
+                Click="BtnDialogCancel_Click" VerticalAlignment="Center" Grid.ColumnSpan="2" Width="62">_Abbrechen</Button>
     </Grid>
 </Window>

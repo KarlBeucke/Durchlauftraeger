@@ -109,7 +109,7 @@ public partial class MainWindow
         //DltVisuell.Children.Clear();
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         _lager = new DialogLager(_dlt) { Topmost = true, Owner = (Window)Parent };
@@ -121,7 +121,7 @@ public partial class MainWindow
         //DltVisuell.Children.Clear();
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         _dlt.KeineLast = false;
@@ -135,7 +135,7 @@ public partial class MainWindow
         //DltVisuell.Children.Clear();
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         _dlt.KeineLast = false;
@@ -158,7 +158,7 @@ public partial class MainWindow
     {
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         _berechnung?.Neuberechnung();
@@ -168,7 +168,7 @@ public partial class MainWindow
     {
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         if (_momentenTexteAn)
@@ -186,7 +186,7 @@ public partial class MainWindow
     {
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         if (_querkraftTexteAn)
@@ -205,7 +205,7 @@ public partial class MainWindow
     {
         if (_dlt.Trägerlänge <= 0)
         {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
             return;
         }
         if (_üPunkteAn)
@@ -300,13 +300,15 @@ public partial class MainWindow
                 Canvas.SetLeft(_punktlast.Punkt!, _mittelpunkt.X - 5);
                 Canvas.SetTop(_punktlast.Punkt!, _mittelpunkt.Y - 5);
                 DltVisuell.Children.Add(_punktlast.Punkt!);
+                _punktlast.Topmost = true;
+                // ShowDialog beschränkt Focus auf Dialg, keine Mouse events im MainWindow
+                _punktlast.Show();
+
                 // MouseEventHandler
                 _punktlast.Punkt!.MouseEnter += Punkt_MouseEnter;
                 _punktlast.Punkt.MouseMove += Punkt_MouseMove;
                 // MouseButtonEventHandler
                 _punktlast.Punkt.MouseRightButtonDown += Punkt_RightButtonDown;
-                _punktlast.Topmost = true;
-                _punktlast.Show();
             }
 
             if (item.Name.Contains("Gleichlast"))
@@ -344,6 +346,11 @@ public partial class MainWindow
             {
                 var startIndex = "Lager".Length;
                 var index = int.Parse(item.Name[startIndex..]);
+                if (index == 0)
+                {
+                    _ = MessageBox.Show("Startknoten darf nicht verschoben werden", "Durchlaufträger");
+                    return;
+                }
 
                 //Übertragungspunkt
                 if (_dlt?.Übertragungspunkte[index] == null) continue;
@@ -354,14 +361,7 @@ public partial class MainWindow
                 MyPopup.IsOpen = false;
                 lager.ShowDialog();
                 DltVisuell.Children.Clear();
-                if (_dlt.Übertragungspunkte[index].Position > _dlt.Trägerlänge)
-                {
-                    _dlt.Trägerlänge = _dlt.Übertragungspunkte[index].Position;
-                }
-                else if (_dlt.Übertragungspunkte[^1].Position < _dlt.Trägerlänge)
-                {
-                    _dlt.Trägerlänge = _dlt.Übertragungspunkte[^1].Position;
-                }
+
                 _darstellung.FestlegungAuflösung();
                 _berechnung?.Neuberechnung();
             }
@@ -428,6 +428,13 @@ public partial class MainWindow
             default:
                 return HitTestResultBehavior.Continue;
         }
+    }
+
+    private void MainWindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        // _punktlast Dialog ist NICHT modal, da Mouseevents erlaubt sind
+        // Dialogfenster muss explizit geschlossen werden, wenn Applikation geschlossen wird
+        _punktlast?.Close();
     }
 
     private void Punkt_MouseEnter(object sender, RoutedEventArgs routedEventArgs)
