@@ -1,0 +1,36 @@
+﻿<Window x:Class="Durchlauftraeger.PunktNeu"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+Title="Übertragungspunkt editieren" Height="200" Width="300"
+WindowStartupLocation="Manual" Left="1200" Top="20">
+    <Grid Height="175" VerticalAlignment="Center">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="50"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="40" />
+            <RowDefinition Height="35" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Margin="0,5,0,0">Knoten ID:</Label>
+        <TextBox Name="PunktId" Grid.Row="0" Grid.Column="1" Margin="10,10,0,7" Height="20" 
+                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
+        <Label Grid.Row="1" Grid.Column="0" Margin="0,5,0,4">Position</Label>
+        <TextBox Name="Position" Grid.Row="1" Grid.Column="1" Margin="10,9,0,7" Height="20" 
+                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
+
+        <Button Grid.Row="2" Grid.Column="0"  Height="26"
+                Click="BtnLöschen_Click" VerticalAlignment="Center" Margin="10,0,37,0">_löschen</Button>
+        <Button Grid.Row="2" Grid.Column="1" Margin="0,3,-69,0" 
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Click="BtnDialogOk_Click" Height="26" Width="36">_OK</Button>
+        <Button Grid.Row="2" Grid.Column="1" Margin="0,3,-23,0" 
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Click="BtnDialogCancel_Click" Height="26" Width="61">_Abbrechen</Button>
+    </Grid>
+</Window>
