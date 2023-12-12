@@ -22,7 +22,7 @@ public partial class MainWindow
     private DialogEinzellast? _punktlast;
     private DialogGleichlast? _gleichlast;
     private bool _momentenTexteAn, _momentMaxTexteAn, _querkraftTexteAn, _üPunkteAn;
-    private bool _leftClick = true;
+    public static bool PunktlastOffen;
 
     private Point _mittelpunkt;
     private bool _isDragging;
@@ -222,8 +222,6 @@ public partial class MainWindow
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _leftClick = !_leftClick;
-        if (_leftClick) return;
         _hitList = new List<Shape>();
         _hitTextBlock.Clear();
         var hitPoint = e.GetPosition(DltVisuell);
@@ -282,6 +280,7 @@ public partial class MainWindow
         {
             if (item.Name.Contains("Punktlast"))
             {
+                if (PunktlastOffen) return;
                 //Übertragungspunkt
                 var startIndex = "Punktlast".Length;
                 var index = int.Parse(item.Name[startIndex..]);
@@ -301,7 +300,7 @@ public partial class MainWindow
                 Canvas.SetTop(_punktlast.Punkt!, _mittelpunkt.Y - 5);
                 DltVisuell.Children.Add(_punktlast.Punkt!);
                 _punktlast.Topmost = true;
-                // ShowDialog beschränkt Focus auf Dialg, keine Mouse events im MainWindow
+                // ShowDialog beschränkt Focus auf Dialog, keine Mouse events im MainWindow
                 _punktlast.Show();
 
                 // MouseEventHandler

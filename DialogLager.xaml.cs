@@ -53,7 +53,7 @@ public partial class DialogLager
             if (_index == _dlt.Übertragungspunkte.Count - 1)
             {
                 var pi = _dlt.Übertragungspunkte[_index];
-                var pim1 = _dlt.Übertragungspunkte[_index-1];
+                var pim1 = _dlt.Übertragungspunkte[_index - 1];
 
                 switch (pi.Lastlänge)
                 {
@@ -68,30 +68,31 @@ public partial class DialogLager
                     // Endlager ohne Gleichlast auf Endpunkt einer Gleichlast verschoben
                     case 0 when _position < pi.Position
                                 && Math.Abs(_position - pim1.Position) < double.Epsilon:
-                    {
-                        if (pim1.Lastlänge > 0)
                         {
-                            pim1.Typ = 3;
-                            _dlt.Übertragungspunkte.RemoveAt(_dlt.Übertragungspunkte.Count-1);
+                            if (pim1.Lastlänge > 0)
+                            {
+                                pim1.Typ = 3;
+                                _dlt.Übertragungspunkte.RemoveAt(_dlt.Übertragungspunkte.Count - 1);
+                            }
+                            _dlt.Trägerlänge = _position;
+                            break;
                         }
-                        _dlt.Trägerlänge = _position;
-                        break;
-                    }
                     // Endlager ohne Gleichlast unter eine Gleichlast verschoben
                     case 0 when _position < pi.Position
                                 && _position < pim1.Position:
-                    {
-                        if (pim1.Lastlänge > 0)
                         {
-                            _ = MessageBox.Show("Endpunkt unter Gleichlast, nicht implementiert", "Durchlaufträger");
+                            if (pim1.Lastlänge > 0)
+                            {
+                                _ = MessageBox.Show("Endpunkt unter Gleichlast, " +
+                                                  "nicht implementiert", "Durchlaufträger");
+                            }
+                            break;
                         }
-                        break;
-                    }
                     // Endlager mit Gleichlast nach rechts
                     case > 0 when _position > pi.Position:
                         pi.Typ = 1;
                         _lagerPunkt = new Übertragungspunkt(_position)
-                            { Typ = 3 };
+                        { Typ = 3 };
                         _dlt.Übertragungspunkte.Add(_lagerPunkt);
                         _dlt.Trägerlänge = _position;
                         break;
@@ -100,6 +101,7 @@ public partial class DialogLager
                         pi.Lastlänge -= pi.Position - _position;
                         pi.Linienlast = Werkzeuge.Linienlast(pi.Lastlänge, pi.Lastwert);
                         pi.Position = _position;
+                        _dlt.Trägerlänge = _position;
                         break;
                 }
             }

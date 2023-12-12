@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Änderung der Einspannungen des Durchlaufträgers" Height="135" Width="290">
+        Title="Änderung der Randbedingungen des Durchlaufträgers" Height="135" Width="290">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -15,8 +15,8 @@
             <RowDefinition Height="50" />
         </Grid.RowDefinitions>
 
-        <Label Grid.Row="0" Grid.Column="0" Margin="0,1,0,0">Einspannung Anfang</Label>
-        <Label Grid.Row="0" Grid.Column="0" Margin="0,20,0,0">Einspannung Ende</Label>
+        <Label Grid.Row="0" Grid.Column="0" Margin="0,1,0,0">Randbedingung Anfang</Label>
+        <Label Grid.Row="0" Grid.Column="0" Margin="0,20,0,0">Randbedingung Ende</Label>
         <CheckBox Name="EinspannungAnfang" Grid.Row="0" Grid.Column="1" Margin="11,10,0,18"></CheckBox>
         <CheckBox Name="EinspannungEnde" Grid.Row="0" Grid.Column="1" Margin="11,28,0,4"></CheckBox>
         <Separator Grid.Column="0"  Grid.Row="0" Height="108" Grid.ColumnSpan="2"

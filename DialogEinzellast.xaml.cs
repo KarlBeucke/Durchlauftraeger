@@ -24,6 +24,7 @@ public partial class DialogEinzellast
         _dlt = dlt;
         _exists = false;
         Position.Focus();
+        MainWindow.PunktlastOffen = true;
     }
     public DialogEinzellast(Modell dlt, int index)
     {
@@ -32,6 +33,7 @@ public partial class DialogEinzellast
         _exists = true;
         _index = index;
         Position.Focus();
+        MainWindow.PunktlastOffen = true;
     }
     public DialogEinzellast(Modell dlt, int index, Berechnung? berechnung, Panel dltVisuell)
     {
@@ -52,6 +54,7 @@ public partial class DialogEinzellast
         // aktiviere Ereignishandler für Canvas
         //dltVisuell.Background = Brushes.Transparent;
         _berechnung = berechnung;
+        MainWindow.PunktlastOffen = true;
     }
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
@@ -139,7 +142,7 @@ public partial class DialogEinzellast
                     _dlt.Übertragungspunkte[_index + 1].Lastwert);
             }
         }
-
+        MainWindow.PunktlastOffen = false;
         Close();
         _berechnung?.Neuberechnung();
     }
@@ -147,6 +150,7 @@ public partial class DialogEinzellast
     private void BtnDialogCancel_Click(object sender, RoutedEventArgs e)
     {
         _dltVisuell?.Children.Remove(Punkt);
+        MainWindow.PunktlastOffen = false;
         Close();
     }
 
@@ -156,6 +160,7 @@ public partial class DialogEinzellast
         LöschEinzellast();
         _dlt.KeineLast = _berechnung!.CheckLasten();
         _berechnung?.Neuberechnung();
+        MainWindow.PunktlastOffen = false;
         Close();
     }
 
