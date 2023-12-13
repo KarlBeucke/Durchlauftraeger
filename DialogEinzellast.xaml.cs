@@ -29,15 +29,16 @@ public partial class DialogEinzellast
     public DialogEinzellast(Modell dlt, int index)
     {
         InitializeComponent();
+        MainWindow.PunktlastOffen = true;
         _dlt = dlt;
         _exists = true;
         _index = index;
         Position.Focus();
-        MainWindow.PunktlastOffen = true;
     }
     public DialogEinzellast(Modell dlt, int index, Berechnung? berechnung, Panel dltVisuell)
     {
         InitializeComponent();
+        MainWindow.PunktlastOffen = true;
         _dlt = dlt;
         _dltVisuell = dltVisuell;
         _index = index;
@@ -54,7 +55,6 @@ public partial class DialogEinzellast
         // aktiviere Ereignishandler für Canvas
         //dltVisuell.Background = Brushes.Transparent;
         _berechnung = berechnung;
-        MainWindow.PunktlastOffen = true;
     }
 
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
@@ -62,13 +62,13 @@ public partial class DialogEinzellast
         if (!double.TryParse(Position.Text, out _position))
         {
             Position.Text = "";
-            _ = MessageBox.Show("Lastposition muss definiert sein muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Lastposition muss definiert sein", "Durchlaufträger");
             return;
         }
         if (!double.TryParse(Lastwert.Text, out _punktlastwert))
         {
             Lastwert.Text = "";
-            _ = MessageBox.Show("Lastwert muss definiert sein muss definiert sein", "Durchlaufträger");
+            _ = MessageBox.Show("Lastwert muss definiert sein", "Durchlaufträger");
             return;
         }
 
@@ -80,6 +80,7 @@ public partial class DialogEinzellast
             {
                 _dlt.Übertragungspunkte[_index].Punktlast[3] = -_punktlastwert;
                 _dltVisuell?.Children.Remove(Punkt);
+                MainWindow.PunktlastOffen = false;
                 Close();
                 _berechnung?.Neuberechnung();
                 return;
@@ -159,9 +160,9 @@ public partial class DialogEinzellast
         if (Position.Text == "") return;
         LöschEinzellast();
         _dlt.KeineLast = _berechnung!.CheckLasten();
-        _berechnung?.Neuberechnung();
         MainWindow.PunktlastOffen = false;
         Close();
+        _berechnung?.Neuberechnung();
     }
 
     private void LöschEinzellast()

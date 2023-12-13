@@ -421,7 +421,7 @@ public partial class MainWindow
                         _hitList?.Add(hit);
                         break;
                 }
-                return HitTestResultBehavior.Stop;
+                return HitTestResultBehavior.Continue;
             case IntersectionDetail.NotCalculated:
                 return HitTestResultBehavior.Continue;
             default:

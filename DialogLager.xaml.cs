@@ -64,6 +64,7 @@ public partial class DialogLager
                     // Endlager ohne Gleichlast nach links verschoben
                     case 0 when _position < pi.Position && _position > pim1.Position:
                         pi.Position = _position;
+                        _dlt.Trägerlänge = _position;
                         break;
                     // Endlager ohne Gleichlast auf Endpunkt einer Gleichlast verschoben
                     case 0 when _position < pi.Position
