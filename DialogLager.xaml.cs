@@ -100,7 +100,6 @@ public partial class DialogLager
                     // Endlager mit Gleichlast nach links 
                     case > 0 when _position < pi.Position:
                         pi.Lastlänge -= pi.Position - _position;
-                        pi.Linienlast = Werkzeuge.Linienlast(pi.Lastlänge, pi.Lastwert);
                         pi.Position = _position;
                         _dlt.Trägerlänge = _position;
                         break;
@@ -116,6 +115,12 @@ public partial class DialogLager
 
     private void NeuesLager()
     {
+        if (Math.Abs(_position - _dlt.Trägerlänge) < double.Epsilon)
+        {
+            _dlt.Übertragungspunkte[^1].Typ = 3;
+            _dlt.EndeFrei = false;
+            return;
+        }
         // finde nächsten Übertragungspunkt nach der neuen Position
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
                      => !(punkt.Position < _position)))
@@ -145,16 +150,10 @@ public partial class DialogLager
             };
             _dlt.Übertragungspunkte.Add(_lagerPunkt);
 
-            if (_nextPunkt is { Lastlänge: > 0 })
-            {
-                _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
-                _nextPunkt.Linienlast =
-                    Werkzeuge.Linienlast(_nextPunkt.Lastlänge, _nextPunkt.Lastwert);
-                _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
-                _lagerPunkt.Lastwert = _lagerPunkt.Lastwert;
-                _lagerPunkt.Linienlast =
-                    Werkzeuge.Linienlast(_lagerPunkt.Lastlänge, _lagerPunkt.Lastwert);
-            }
+            if (_nextPunkt is not { Lastlänge: > 0 }) return;
+            _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
+            _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
+            _lagerPunkt.Lastwert = _lagerPunkt.Lastwert;
         }
         // Übertragungspunkt vorhanden
         else
@@ -177,14 +176,22 @@ public partial class DialogLager
 
     private void LagerLöschen()
     {
-        // nicht an Start- oder Endpunkt
-        if (_index < 1 || _index > _dlt.Übertragungspunkte.Count - 2)
+        // nicht an Startpunkt
+        if (_index < 1)
         {
-            _ = MessageBox.Show("Start-/Endposition kann nicht gelöscht werden, freie Enden werden nicht unterstützt", "Durchlaufträger");
+            _ = MessageBox.Show("Startposition kann nicht gelöscht werden, freie Enden werden nicht unterstützt", "Durchlaufträger");
             return;
         }
 
         var pi = _dlt.Übertragungspunkte[_index];
+        // Endlager
+        if (Math.Abs(_dlt.Trägerlänge - pi.Position) < double.Epsilon)
+        {
+            pi.Typ = 1;
+            _dlt.EndeFrei = true;
+            return;
+        }
+
         var pip1 = _dlt.Übertragungspunkte[_index + 1];
         // keine Gleichlast am Lager
         if (pi.Lastlänge == 0 && pip1.Lastlänge == 0)
@@ -196,9 +203,6 @@ public partial class DialogLager
         else if (Math.Abs(pip1.Lastwert - pi.Lastwert) < double.Epsilon)
         {
             pip1.Lastlänge += pi.Lastlänge;
-            pip1.Linienlast =
-                Werkzeuge.Linienlast(pip1.Lastlänge, pip1.Lastwert);
-
             if (pi.Lastlänge > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
             else
             {

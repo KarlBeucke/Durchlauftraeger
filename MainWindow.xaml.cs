@@ -17,7 +17,6 @@ public partial class MainWindow
     private readonly Berechnung? _berechnung;
     private readonly Darstellung _darstellung;
     private DialogNeuerTräger? _träger;
-    private DialogEinspannung? _einspannung;
     private DialogLager? _lager;
     private DialogEinzellast? _punktlast;
     private DialogGleichlast? _gleichlast;
@@ -54,54 +53,50 @@ public partial class MainWindow
         _darstellung.FestlegungAuflösung();
         _berechnung?.Neuberechnung();
     }
-    private void EinspannungÄndern(object sender, RoutedEventArgs e)
+    private void TrägerÄndern(object sender, RoutedEventArgs e)
     {
-        //DltVisuell.Children.Clear();
-        if (_dlt.Trägerlänge <= 0)
-        {
-            _ = MessageBox.Show("Träger muss definiert sein", "Durchlaufträger");
-            return;
-        }
-        _einspannung = new DialogEinspannung(_dlt)
+        _träger = new DialogNeuerTräger(_dlt, true)
         {
             Topmost = true,
             Owner = (Window)Parent,
+            Gesamtlänge = { Text = _dlt.Trägerlänge.ToString(CultureInfo.CurrentCulture) }
         };
-        switch (_dlt.AnfangFest)
+        if (!_dlt.AnfangFest)
         {
-            case true when _dlt.EndeFest:
-                _einspannung.EinspannungAnfang.IsChecked = true;
-                _einspannung.EinspannungEnde.IsChecked = true;
-                break;
-            case true:
-                _einspannung.EinspannungAnfang.IsChecked = true;
-                break;
-            default:
-                {
-                    if (_dlt.EndeFest) _einspannung.EinspannungEnde.IsChecked = true;
-                    break;
-                }
-        }
-        _einspannung.ShowDialog();
-
-        if (_dlt.AnfangFest)
-        {
-            // eingespannter Rand am Trägeranfang, wa = phia = 0
-            var zStartFest = new double[4, 2];
-            zStartFest[2, 0] = 1;
-            zStartFest[3, 1] = 1;
-            // zaL = zStartFest * (Ma, Qa)
-            _dlt.Übertragungspunkte[0].Z = zStartFest;
+            _träger.AnfangGelenkig.IsChecked = true;
+            _träger.AnfangEingespannt.IsChecked = false;
         }
         else
         {
-            // gelenkiger Rand am Trägeranfang, wa = Ma = 0
-            var zStartGelenk = new double[4, 2];
-            zStartGelenk[1, 0] = 1;
-            zStartGelenk[3, 1] = 1;
-            // zaL = zStartGelenk * (phia, Qa)
-            _dlt.Übertragungspunkte[0].Z = zStartGelenk;
+            _träger.AnfangGelenkig.IsChecked = false;
+            _träger.AnfangEingespannt.IsChecked = true;
         }
+
+        if (_dlt is { EndeFest: false, EndeFrei: false })
+        {
+            _träger.EndeGelenkig.IsChecked = true;
+            _träger.EndeEingespannt.IsChecked = false;
+            _träger.EndeFrei.IsChecked = false;
+        }
+        if (_dlt is { EndeFest: true, EndeFrei: false })
+        {
+            _träger.EndeGelenkig.IsChecked = false;
+            _träger.EndeEingespannt.IsChecked = true;
+            _träger.EndeFrei.IsChecked = false;
+        }
+        if (_dlt is { EndeFrei: true })
+        {
+            _träger.EndeGelenkig.IsChecked = false;
+            _träger.EndeEingespannt.IsChecked = false;
+            _träger.EndeFrei.IsChecked = true;
+        }
+
+        _träger.EI.Text = _dlt.EI.ToString(CultureInfo.CurrentCulture);
+
+        _träger.ShowDialog();
+        if (!_träger.Ok) return;
+
+        _darstellung.FestlegungAuflösung();
         _berechnung?.Neuberechnung();
     }
     private void NeuesLager(object sender, RoutedEventArgs e)
@@ -116,7 +111,7 @@ public partial class MainWindow
         _lager.ShowDialog();
         _berechnung?.Neuberechnung();
     }
-    private void NeuePunktlast(object sender, RoutedEventArgs e)
+    private void NeueEinzellast(object sender, RoutedEventArgs e)
     {
         //DltVisuell.Children.Clear();
         if (_dlt.Trägerlänge <= 0)

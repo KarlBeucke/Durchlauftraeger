@@ -116,15 +116,18 @@ public class Darstellung
         // Trägerende
         _endIndex = _dlt.Übertragungspunkte.Count - 1;
         lagerKnoten = _dlt.Übertragungspunkte[_endIndex];
-        if (_dlt.EndeFest)
+        switch (_dlt.EndeFest)
         {
-            pathGeometry = DreiFesthaltungenZeichnen(lagerKnoten);
-            var drehPunkt = TransformPunkt(lagerKnoten, Auflösung);
-            pathGeometry.Transform = new RotateTransform(-90, drehPunkt.X, drehPunkt.Y);
-        }
-        else
-        {
-            pathGeometry = EineFesthaltungZeichnen(lagerKnoten);
+            case true:
+                {
+                    pathGeometry = DreiFesthaltungenZeichnen(lagerKnoten);
+                    var drehPunkt = TransformPunkt(lagerKnoten, Auflösung);
+                    pathGeometry.Transform = new RotateTransform(-90, drehPunkt.X, drehPunkt.Y);
+                    break;
+                }
+            case false when !_dlt.EndeFrei:
+                pathGeometry = EineFesthaltungZeichnen(lagerKnoten);
+                break;
         }
 
         path = new Path()

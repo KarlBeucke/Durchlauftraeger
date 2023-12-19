@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace Durchlauftraeger;
@@ -33,7 +34,7 @@ public class Berechnung
         for (var i = 1; i < _dlt.Übertragungspunkte.Count; i++)
         {
             punkte.Add(i);
-            if (_dlt.Übertragungspunkte[i].Typ != 3) continue;
+            if (_dlt.Übertragungspunkte[i].Typ != 3 && i < _dlt.Übertragungspunkte.Count - 1) continue;
             felder.Add(punkte);
             punkte = new List<int> { i };
         }
@@ -75,31 +76,38 @@ public class Berechnung
                     // freier Abschnitt
                     case 0:
                         l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
+                        pik.A = Werkzeuge.Uebertragungsmatrix(l, _dlt.EI);
                         pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A, z);
                         break;
                     // Abschnitt mit Last
                     case 1:
                         l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
+                        pik.A = Werkzeuge.Uebertragungsmatrix(l, _dlt.EI);
                         pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A, z);
                         pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A, lü);
-                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Linienlast);
+                        var linienlast = Werkzeuge.Linienlast(l, pik.Lastwert, _dlt.EI);
+                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, linienlast);
                         pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Punktlast);
                         break;
                     // Abschnitt mit Lager am Ende, Übertragung des Zustandsvektors mit Federkopplung auf nächsten Abschnitt
                     case 3:
                         l = pik.Position - pikm1.Position;
-                        pik.A = Werkzeuge.Uebertragungsmatrix(l, 1);
+                        pik.A = Werkzeuge.Uebertragungsmatrix(l, _dlt.EI);
                         pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A, z);
                         pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A, lü);
-                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Linienlast);
+                        linienlast = Werkzeuge.Linienlast(l, pik.Lastwert, _dlt.EI);
+                        pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, linienlast);
                         break;
                 }
             }
 
             if (felder.Count == 1)
             {
+                if (_dlt is { EndeFrei: true, AnfangFest: false })
+                {
+                    _ = MessageBox.Show("Träger ist instabil, Kragarm muss eingespannt sein", "Durchlaufträger");
+                    return;
+                }
                 Einfeldträger();
                 _darstellung.Momentenverlauf();
                 _darstellung.Querkraftverlauf();
@@ -137,20 +145,28 @@ public class Berechnung
         // Am rechten Rand des DLTs Gleichungssystem aufstellen und lösen
         // letztes Feld der Übertragung
         double[,] matrix;
-        if (_dlt.EndeFest)
+        switch (_dlt.EndeFest)
         {
-            // eingespanntes Lager am Ende: we = phie = 0
-            matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 1);
-            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
-            rs = Werkzeuge.SubVektor(lk, 0, 1);
+            case true:
+                // Einspannung am Ende: we = phie = 0
+                matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 1);
+                lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
+                rs = Werkzeuge.SubVektor(lk, 0, 1);
+                break;
+            case false when !_dlt.EndeFrei:
+                // Gelenk am Ende: we = Me = 0
+                matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 2);
+                lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
+                rs = Werkzeuge.SubVektor(lk, 0, 2);
+                break;
+            default:
+                // freies Ende: Qe = Me = 0
+                matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 2, 3);
+                lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
+                rs = Werkzeuge.SubVektor(lk, 2, 3);
+                break;
         }
-        else
-        {
-            // gelenkiges Lager am Ende: we = Me = 0
-            matrix = Werkzeuge.SubMatrix(_dlt.Übertragungspunkte[^1].Z, 0, 2);
-            lk = _dlt.Übertragungspunkte[felder[^1][^1]].LastÜ;
-            rs = Werkzeuge.SubVektor(lk, 0, 2);
-        }
+
         rs[0] = -rs[0]; rs[1] = -rs[1];
         var gaussSolver = new Gleichungslöser(matrix, rs);
         if (gaussSolver.Decompose()) gaussSolver.Solve();
@@ -173,8 +189,10 @@ public class Berechnung
         {
             var pkE = _dlt.Übertragungspunkte[felder[^1][index]];
             var pkEm1 = _dlt.Übertragungspunkte[felder[^1][index - 1]];
+            var l = pkE.Position - pkEm1.Position;
             pkE.Zl = Werkzeuge.MatrixVectorMultiply(pkE.A, pkEm1.Zr);
-            pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Linienlast);
+            var linienlast = Werkzeuge.Linienlast(l, pkE.Lastwert, _dlt.EI);
+            pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, linienlast);
             if (index == felder[^1].Count - 1) break;
             pkE.Zr = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Punktlast);
         }
@@ -215,7 +233,8 @@ public class Berechnung
                 var piIm1 = _dlt.Übertragungspunkte[felder[i][index - 1]];
                 var piI = _dlt.Übertragungspunkte[felder[i][index]];
                 piI.Zl = Werkzeuge.MatrixVectorMultiply(piI.A, piIm1.Zr);
-                piI.Zl = Werkzeuge.VectorVectorAdd(piI.Zl, piI.Linienlast);
+                var linienlast = Werkzeuge.Linienlast(piI.Lastlänge, piI.Lastwert, _dlt.EI);
+                piI.Zl = Werkzeuge.VectorVectorAdd(piI.Zl, linienlast);
                 // letzter Punkt im Feld hat nur Zl
                 if (index == felder[i].Count - 1) break;
                 piI.Zr = Werkzeuge.VectorVectorAdd(piI.Zl, piI.Punktlast);
@@ -233,20 +252,25 @@ public class Berechnung
         var piE = _dlt.Übertragungspunkte[^1];
         var lk = piE.LastÜ;
         var zAnfang = _dlt.Übertragungspunkte[0].Z;
-
         double[] rs;
         double[,] matrix;
-        if (_dlt.EndeFest)
+        switch (_dlt.EndeFest)
         {
-            // Einspannung am Ende: we = phie = 0
-            matrix = Werkzeuge.SubMatrix(piE.Z, 0, 1);
-            rs = Werkzeuge.SubVektor(lk, 0, 1);
-        }
-        else
-        {
-            // Gelenk am Ende: we = Me = 0
-            matrix = Werkzeuge.SubMatrix(piE.Z, 0, 2);
-            rs = Werkzeuge.SubVektor(lk, 0, 2);
+            case true:
+                // Einspannung am Ende: we = phie = 0
+                matrix = Werkzeuge.SubMatrix(piE.Z, 0, 1);
+                rs = Werkzeuge.SubVektor(lk, 0, 1);
+                break;
+            case false when !_dlt.EndeFrei:
+                // Gelenk am Ende: we = Me = 0
+                matrix = Werkzeuge.SubMatrix(piE.Z, 0, 2);
+                rs = Werkzeuge.SubVektor(lk, 0, 2);
+                break;
+            default:
+                // freies Ende: Qe = Me = 0
+                matrix = Werkzeuge.SubMatrix(piE.Z, 2, 3);
+                rs = Werkzeuge.SubVektor(lk, 2, 3);
+                break;
         }
         // Anfangsvektor im Feld
         rs[0] = -rs[0]; rs[1] = -rs[1];
@@ -260,7 +284,8 @@ public class Berechnung
             var pkE = _dlt.Übertragungspunkte[index];
             var pkEm1 = _dlt.Übertragungspunkte[index - 1];
             pkE.Zl = Werkzeuge.MatrixVectorMultiply(pkE.A, pkEm1.Zr);
-            pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Linienlast);
+            var linienlast = Werkzeuge.Linienlast(pkE.Lastlänge, pkE.Lastwert, _dlt.EI);
+            pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, linienlast);
             if (index == _dlt.Übertragungspunkte.Count - 1) break;
             pkE.Zr = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Punktlast);
         }
@@ -271,7 +296,8 @@ public class Berechnung
             var pik = _dlt.Übertragungspunkte[k];
             var pikm1 = _dlt.Übertragungspunkte[k - 1];
             pik.Zl = Werkzeuge.MatrixVectorMultiply(pik.A, pikm1.Zr);
-            pik.Zl = Werkzeuge.VectorVectorAdd(pik.Zl, pik.Linienlast);
+            var linienlast = Werkzeuge.Linienlast(pik.Lastlänge, pik.Lastwert, _dlt.EI);
+            pik.Zl = Werkzeuge.VectorVectorAdd(pik.Zl, linienlast);
             if (k == _dlt.Übertragungspunkte.Count - 1) continue;
             pik.Zr = Werkzeuge.VectorVectorAdd(pik.Zl, pik.Punktlast);
         }

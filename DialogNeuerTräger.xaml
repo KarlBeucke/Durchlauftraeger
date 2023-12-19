@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Eingabewerte für neuen Durchlaufträger" Height="160" Width="290">
+        Title="Eingabewerte für neuen Durchlaufträger" Height="250" Width="290">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -12,7 +12,8 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="35" />
-            <RowDefinition Height="50" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="35" />
             <RowDefinition Height="30" />
         </Grid.RowDefinitions>
         <Label Grid.Row="0" Grid.Column="0" Margin="0,5,0,0">Gesamtlänge des Trägers</Label>
@@ -20,15 +21,26 @@
                  VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
         <Separator Grid.Column="0" Grid.Row="0" Height="2" Grid.ColumnSpan="2"
                    Margin="0,10,0,0" VerticalAlignment="Bottom" />
-        <Label Grid.Row="1" Grid.Column="0" Margin="0,1,0,0">Einspannung Anfang</Label>
-        <Label Grid.Row="1" Grid.Column="0" Margin="0,20,0,0">Einspannung Ende</Label>
-        <CheckBox Name="EinspannungAnfang" Grid.Row="1" Grid.Column="1" Margin="11,10,0,18"></CheckBox>
-        <CheckBox Name="EinspannungEnde" Grid.Row="1" Grid.Column="1" Margin="11,28,0,4"></CheckBox>
+        <Label Grid.Row="1" Grid.Column="0" Margin="0,1,0,82">Anfang gelenkig gelagert</Label>
+        <Label Grid.Row="1" Grid.Column="0" Margin="41,20,0,63">eingespannt</Label>
+        <Label Grid.Row="1" Grid.Column="0" Margin="0,40,0,42" Content="Ende    gelenkig gelagert"/>
+        <Label Grid.Row="1" Grid.Column="0" Margin="3,60,0,23" Content="           eingespannt"/>
+        <Label Grid.Row="1" Grid.Column="0" Margin="3,80,0,1" Content="           frei (Kragarm)"/>
+        <CheckBox Name="AnfangGelenkig" Grid.Row="1" Grid.Column="1" Margin="11,10,69,45" Click="AnfangGelenkigClick"/>
+        <CheckBox Name="AnfangEingespannt" Grid.Row="1" Grid.Column="1" Margin="11,28,69,45" Click="AnfangEingespanntClick"/>
+        <CheckBox Name="EndeGelenkig" Grid.Row="1" Grid.Column="1" Margin="11,50,67,26" Click="EndeGelenkigClick"></CheckBox>
+        <CheckBox Name="EndeEingespannt" Grid.Row="1" Grid.Column="1" Margin="11,68,67,26" Click="EndeEingespanntClick"></CheckBox>
+        <CheckBox Name="EndeFrei" Grid.Row="1" Grid.Column="1" Margin="11,86,69,7" Click="EndeFreiClick"></CheckBox>
         <Separator Grid.Column="0" Grid.Row="1" Height="2" Grid.ColumnSpan="2"
                    Margin="0,10,0,0" VerticalAlignment="Bottom" />
-        <Button IsDefault="True" Grid.Row="2" Grid.Column="1"  Height="26"
+        <Label Grid.Row="2" Grid.Column="0" Margin="0,5,0,0" Content="Material und Querschnitt          EI ="/>
+        <TextBox Name="EI" Grid.Row="2" Grid.Column="1" Margin="10,0,0,0" Height="22" 
+                 VerticalAlignment="Center" HorizontalAlignment="Left" Width="32"/>
+        <Separator Grid.Column="0" Grid.Row="2" Height="2" Grid.ColumnSpan="2"
+                   Margin="0,10,0,0" VerticalAlignment="Bottom" />
+        <Button IsDefault="True" Grid.Row="3" Grid.Column="1"  Height="26"
                 Click="BtnDialogOk_Click" VerticalAlignment="Center" Margin="35,0,31,0">_Ok</Button>
-        <Button Grid.Column="0" Grid.Row="2" Height="26" Margin="170,0,0,0" HorizontalAlignment="Left"
+        <Button Grid.Column="0" Grid.Row="3" Height="26" Margin="170,0,0,0" HorizontalAlignment="Left"
                 Click="BtnDialogCancel_Click" VerticalAlignment="Center" Grid.ColumnSpan="2">_Abbrechen</Button>
     </Grid>
 </Window>

@@ -12,15 +12,34 @@ public static class Werkzeuge
                              { 0, 0,    0      ,1}};
         return matrix;
     }
-    public static double[] Linienlast(double länge, double wert)
+    public static double[] Linienlast(double länge, double wert, double ei)
     {
-        const double ei = 1;
         var linienlast = new double[4];
         linienlast[0] = wert * Math.Pow(länge, 4) / 24 / ei;
         linienlast[1] = wert * Math.Pow(länge, 3) / 6 / ei;
         linienlast[2] = -wert * Math.Pow(länge, 2) / 2;
         linienlast[3] = -wert * länge;
         return linienlast;
+    }
+    public static double[] Trapezlast(double länge, double wertL, double wertR, double ei)
+    {
+        // wertL= wertLinks, wertR=wertR
+        var trapezlast = new double[4];
+        trapezlast[0] = (4 * wertL + wertR) * Math.Pow(länge, 4) / 120 / ei;
+        trapezlast[1] = (3 * wertL + wertR) * Math.Pow(länge, 3) / 24 / ei;
+        trapezlast[2] = -(2 * wertL + wertR) * Math.Pow(länge, 2) / 6;
+        trapezlast[3] = -(wertL + wertR) * länge / 2;
+        return trapezlast;
+    }
+    public static double[] Temperaturlast(double länge, double deltaT, double alfaT, double ei, double h)
+    {
+        // deltaT = TemperaturUnten-TemperaturOben, h = Höhe, alfaT = Temperaturausdehnungskoeff.
+        var temperaturlast = new double[4];
+        temperaturlast[0] = -ei * alfaT * deltaT * länge * länge / 2 / h;
+        temperaturlast[1] = -ei * alfaT * deltaT * länge / h;
+        temperaturlast[2] = 0;
+        temperaturlast[3] = 0;
+        return temperaturlast;
     }
     public static double[] VectorVectorAdd(double[] vec1, double[] vec2)
     {

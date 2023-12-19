@@ -7,7 +7,9 @@ public class Modell
     public double Trägerlänge { get; set; }
     public bool AnfangFest { get; set; }
     public bool EndeFest { get; set; }
+    public bool EndeFrei { get; set; }
     public bool KeineLast { get; set; }
+    public double EI { get; set; }
 
     public Übertragungspunkt ÜbertragungsPunkt;
     public readonly List<Übertragungspunkt> Übertragungspunkte;
@@ -41,7 +43,6 @@ public class Übertragungspunkt
     public double[] Zl { get; set; }
     public double[] Zr { get; set; }
     public double[] Punktlast { get; set; }
-    public double[] Linienlast { get; set; }
     public double[] LastÜ { get; set; }
     public double[] Lk { get; init; }
     public double[,] AnfangKopplung { get; set; }
@@ -54,7 +55,6 @@ public class Übertragungspunkt
         Zl = new double[4];
         Zr = new double[4];
         Punktlast = new double[4];
-        Linienlast = new double[4];
         LastÜ = new double[4];
         Lk = new double[4];
         AnfangKopplung = new double[,] { };
@@ -69,7 +69,6 @@ public class Übertragungspunkt
         Zl = new double[4];
         Zr = new double[4];
         Punktlast = new double[4];
-        Linienlast = new double[4];
         LastÜ = new double[4];
         Lk = new double[4];
         AnfangKopplung = new double[,] { };
@@ -85,7 +84,6 @@ public class Übertragungspunkt
         Zl = new double[4];
         Zr = new double[4];
         Punktlast = new double[4];
-        Linienlast = new double[4];
         LastÜ = new double[4];
         Lk = new double[4];
         AnfangKopplung = new double[,] { };
