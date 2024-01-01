@@ -20,7 +20,9 @@ public partial class MainWindow
     private DialogLager? _lager;
     private DialogEinzellast? _punktlast;
     private DialogGleichlast? _gleichlast;
-    private bool _momentenTexteAn, _momentMaxTexteAn, _querkraftTexteAn, _üPunkteAn;
+    private bool _üPunkteAn, _momentenTexteAn, _querkraftTexteAn, _reaktionenTexteAn;
+    private bool _momentMaxTexteAn, _durchbiegungMaxTextAn;
+    private bool _biegelinieAn = true;
     public static bool PunktlastOffen;
 
     private Point _mittelpunkt;
@@ -40,6 +42,7 @@ public partial class MainWindow
         _berechnung = new Berechnung(_dlt, _darstellung, DltVisuell);
         _momentenTexteAn = true;
         _querkraftTexteAn = true;
+        _reaktionenTexteAn = true;
         _üPunkteAn = true;
     }
 
@@ -148,6 +151,24 @@ public partial class MainWindow
             return comparePosition == 3 ? x.Position.CompareTo(y.Position) : comparePosition;
         }
     }
+    private void ÜbertragungspunkteAnzeigen(object sender, RoutedEventArgs e)
+    {
+        if (_dlt.Trägerlänge <= 0)
+        {
+            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
+            return;
+        }
+        if (_üPunkteAn)
+        {
+            _darstellung.ÜbertragungspunkteEntfernen();
+            _üPunkteAn = false;
+        }
+        else
+        {
+            _darstellung.ÜbertragungspunkteAnzeigen();
+            _üPunkteAn = true;
+        }
+    }
 
     private void NeueBerechnung(object sender, RoutedEventArgs e)
     {
@@ -169,11 +190,13 @@ public partial class MainWindow
         if (_momentenTexteAn)
         {
             _darstellung.MomentenTexteEntfernen();
+            _darstellung.MomentenMaxTexteEntfernen();
             _momentenTexteAn = false;
         }
         else
         {
             _darstellung.MomentenTexteAnzeigen();
+            _darstellung.MomentenMaxTexteAnzeigen();
             _momentenTexteAn = true;
         }
     }
@@ -195,23 +218,37 @@ public partial class MainWindow
             _querkraftTexteAn = true;
         }
     }
-
-    private void ÜbertragungspunkteAnzeigen(object sender, RoutedEventArgs e)
+    private void BiegelinieAnzeigen(object sender, RoutedEventArgs e)
     {
-        if (_dlt.Trägerlänge <= 0)
+        if (_biegelinieAn)
         {
-            _ = MessageBox.Show("Trägerlänge muss definiert sein", "Durchlaufträger");
-            return;
-        }
-        if (_üPunkteAn)
-        {
-            _darstellung.ÜbertragungspunkteEntfernen();
-            _üPunkteAn = false;
+            _darstellung.BiegelinieEntfernen();
+            _darstellung.DurchbiegungMaxTextEntfernen();
+            _biegelinieAn = false;
         }
         else
         {
-            _darstellung.ÜbertragungspunkteAnzeigen();
-            _üPunkteAn = true;
+            _darstellung.Biegelinie();
+            _darstellung.DurchbiegungMaxTextAnzeigen();
+            _biegelinieAn = true;
+        }
+    }
+    private void ReaktionenAnzeigen(object sender, RoutedEventArgs e)
+    {
+        if (_reaktionenTexteAn)
+        {
+            foreach (var path in _darstellung.Reaktionen)
+            {
+                DltVisuell.Children.Remove(path);
+            }
+            _darstellung.ReaktionenTexteEntfernen();
+            _reaktionenTexteAn = false;
+        }
+        else
+        {
+            _darstellung.ReaktionenZeichnen();
+            _darstellung.ReaktionenTexteAnzeigen();
+            _reaktionenTexteAn = true;
         }
     }
 
@@ -360,7 +397,7 @@ public partial class MainWindow
                 _berechnung?.Neuberechnung();
             }
 
-            if (!item.Name.Contains("Momentenlinie")) continue;
+            if (item.Name.Contains("Momentenlinie"))
             {
                 // click auf Momentenlinie --> Maximalmomente unter Gleichlast werden angezeigt
                 if (_momentMaxTexteAn)
@@ -372,6 +409,20 @@ public partial class MainWindow
                 {
                     _darstellung.MomentenMaxTexteAnzeigen();
                     _momentMaxTexteAn = true;
+                }
+            }
+            if (!item.Name.Contains("Biegelinie")) continue;
+            {
+                // click auf Biegelinie --> maximale Durchbiegung anzeigen
+                if (_durchbiegungMaxTextAn)
+                {
+                    _darstellung.DurchbiegungMaxTextEntfernen();
+                    _durchbiegungMaxTextAn = false;
+                }
+                else
+                {
+                    _darstellung.DurchbiegungMaxTextAnzeigen();
+                    _durchbiegungMaxTextAn = true;
                 }
             }
         }

@@ -35,7 +35,6 @@ public partial class DialogLager
     private void BtnDialogOk_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrEmpty(LagerPosition.Text)) _position = double.Parse(LagerPosition.Text);
-        if (_position > _dlt.Trägerlänge) _dlt.Trägerlänge = _position;
         if (_exists)
         {
             if (_index == 0)
@@ -46,24 +45,30 @@ public partial class DialogLager
 
             if (_index < _dlt.Übertragungspunkte.Count - 1)
             {
-                _lastWertAlt = _dlt.Übertragungspunkte[_index + 1].Lastwert;
-                LagerLöschen();
-                NeuesLager();
+                if (_position > _dlt.Trägerlänge) _dlt.Trägerlänge = _position;
+                {
+                    _lastWertAlt = _dlt.Übertragungspunkte[_index + 1].Lastwert;
+                    LagerLöschen();
+                    NeuesLager();
+                }
             }
             if (_index == _dlt.Übertragungspunkte.Count - 1)
             {
                 var pi = _dlt.Übertragungspunkte[_index];
                 var pim1 = _dlt.Übertragungspunkte[_index - 1];
+                if (_position > _dlt.Trägerlänge) _dlt.Trägerlänge = _position;
 
                 switch (pi.Lastlänge)
                 {
                     // Endlager ohne Gleichlast nach rechts verschoben
                     case 0 when _position > pi.Position:
+                        pi.Position = _position;
                         _dlt.Trägerlänge = _position;
                         break;
                     // Endlager ohne Gleichlast nach links verschoben
                     case 0 when _position < pi.Position && _position > pim1.Position:
                         pi.Position = _position;
+                        _dlt.Trägerlänge = _position;
                         _dlt.Trägerlänge = _position;
                         break;
                     // Endlager ohne Gleichlast auf Endpunkt einer Gleichlast verschoben
@@ -92,8 +97,7 @@ public partial class DialogLager
                     // Endlager mit Gleichlast nach rechts
                     case > 0 when _position > pi.Position:
                         pi.Typ = 1;
-                        _lagerPunkt = new Übertragungspunkt(_position)
-                        { Typ = 3 };
+                        _lagerPunkt = new Übertragungspunkt(_position) { Typ = 3 };
                         _dlt.Übertragungspunkte.Add(_lagerPunkt);
                         _dlt.Trägerlänge = _position;
                         break;
@@ -108,7 +112,9 @@ public partial class DialogLager
         }
         else
         {
-            NeuesLager();
+            // neues Lager definieren
+            if (_position <= _dlt.Trägerlänge) NeuesLager();
+            else _ = MessageBox.Show("neue Lagerposition außerhalb des Trägers", "Durchlaufträger");
         }
         Close();
     }
@@ -150,10 +156,12 @@ public partial class DialogLager
             };
             _dlt.Übertragungspunkte.Add(_lagerPunkt);
 
-            if (_nextPunkt is not { Lastlänge: > 0 }) return;
-            _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
-            _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
-            _lagerPunkt.Lastwert = _lagerPunkt.Lastwert;
+            if (_nextPunkt is { Lastlänge: > 0 })
+            {
+                _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
+                _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
+                _lagerPunkt.Lastwert = _lagerPunkt.Lastwert;
+            }
         }
         // Übertragungspunkt vorhanden
         else

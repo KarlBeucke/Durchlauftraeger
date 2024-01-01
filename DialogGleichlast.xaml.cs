@@ -8,7 +8,6 @@ namespace Durchlauftraeger;
 public partial class DialogGleichlast
 {
     private readonly Modell _dlt;
-    private double _ei;
     private readonly bool _exists;
     private double _anfang;
     private double _länge;
@@ -20,7 +19,6 @@ public partial class DialogGleichlast
     {
         InitializeComponent();
         _dlt = dlt;
-        _ei = _dlt.EI;
         _exists = false;
         Anfang.Focus();
     }
@@ -28,7 +26,6 @@ public partial class DialogGleichlast
     {
         InitializeComponent();
         _dlt = dlt;
-        _ei = _dlt.EI;
         _exists = true;
         _anfangIndex = anfangIndex;
         _endIndex = endIndex;
@@ -111,7 +108,6 @@ public partial class DialogGleichlast
         }
 
         // finde Übertragungspunkt am Ende der Gleichlast, evtl. neue Länge
-        Werkzeuge.Linienlast(_länge, _lastwert, _ei);
         vorhanden = false;
         foreach (var punkt in _dlt.Übertragungspunkte.Where(punkt
                      => !(Math.Abs(punkt.Position - (_anfang + _länge)) > double.Epsilon)))
@@ -188,18 +184,15 @@ public partial class DialogGleichlast
         // Übertragungspunkt am Ende
         pi.Lastlänge = 0;
         pi.Lastwert = 0;
-        if (_endIndex < _dlt.Übertragungspunkte.Count - 1)
+        if (pi.Typ == 1
+            && _dlt.Übertragungspunkte[_endIndex + 1].Lastlänge == 0
+            && pi.Punktlast.Sum() == 0)
         {
-            if (pi.Typ == 1
-                && _dlt.Übertragungspunkte[_endIndex + 1].Lastlänge == 0
-                && pi.Punktlast.Sum() == 0)
-            {
-                _dlt.Übertragungspunkte.RemoveAt(_endIndex);
-            }
+            _dlt.Übertragungspunkte.RemoveAt(_endIndex);
         }
 
         // Übertragungspunkt am Anfang löschen, falls dort keine Punktlast ist
-        if (piA is { Typ: 1, Lastlänge: 0 } && piA.Punktlast.Sum() == 0)
+        if (piA.Typ == 1 && piA.Lastlänge == 0 && piA.Punktlast.Sum() == 0)
         {
             _dlt.Übertragungspunkte.RemoveAt(indexA);
         }
@@ -221,6 +214,7 @@ public partial class DialogGleichlast
         {
             _ = MessageBox.Show("Anfang der Gleichlast außerhalb des Trägers", "Eingabe einer Gleichlast");
             Anfang.Text = "";
+            return;
         }
 
         // falls Anfangsposition geändert, ggf. Länge anpassen

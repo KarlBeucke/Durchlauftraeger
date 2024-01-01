@@ -24,21 +24,30 @@ public class Darstellung
     private int _endIndex;
     private double _momentenAuflösung;
     private double _querkraftAuflösung;
+    private double _durchbiegungAuflösung;
     private List<object> ÜPunkte { get; }
+    private List<object> KnotenIDs { get; }
+    private List<object> DurchbiegungMaxText { get; }
     private List<object> MomentenTexte { get; }
     private List<object> MomentenMaxTexte { get; }
     private List<object> QuerkraftTexte { get; }
-    private List<object> KnotenIDs { get; }
+    private List<object> ReaktionenTexte { get; }
+    public List<Shape> Reaktionen { get; }
+    private double _maxDurchbiegung, _maxPos;
+    private Shape? _durchbiegungPath;
 
     public Darstellung(Modell dlt, Canvas visual)
     {
         _dlt = dlt;
         _visual = visual;
         ÜPunkte = new List<object>();
+        KnotenIDs = new List<object>();
         MomentenTexte = new List<object>();
+        DurchbiegungMaxText = new List<object>();
         MomentenMaxTexte = new List<object>();
         QuerkraftTexte = new List<object>();
-        KnotenIDs = new List<object>();
+        ReaktionenTexte = new List<object>();
+        Reaktionen = new List<Shape>();
     }
 
     public void FestlegungAuflösung()
@@ -80,6 +89,70 @@ public class Darstellung
         ÜbertragungspunkteAnzeigen();
         LagerZeichnen();
         if (_dlt.KeineLast == false) LastenZeichnen();
+    }
+
+    public void ÜbertragungspunkteAnzeigen()
+    {
+        // Übertragungspunkte werden als EllipseGeometry hinzugefügt
+        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
+        {
+            var name = "Übertragungspunkt" + i;
+            var punkt = new Point(_dlt.Übertragungspunkte[i].Position * Auflösung, 0);
+            var übertragung = new EllipseGeometry(punkt, 5, 5);
+
+            // Übertragungspunkte werden gezeichnet
+            Shape üPunktSymbol = new Path()
+            {
+                Name = name,
+                Stroke = Blue,
+                StrokeThickness = 1,
+                Data = übertragung
+            };
+            _visual.Children.Add(üPunktSymbol);
+            Canvas.SetLeft(üPunktSymbol, PlazierungH);
+            Canvas.SetTop(üPunktSymbol, PlazierungV1);
+            ÜPunkte.Add(üPunktSymbol);
+
+            var id = new TextBlock
+            {
+                Name = "Id",
+                FontSize = 12,
+                Text = i.ToString(),
+                Foreground = Black
+            };
+            Canvas.SetTop(id, PlazierungV1);
+            Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
+            _visual.Children.Add(id);
+            KnotenIDs.Add(id);
+
+            const int posOffset = 20;
+            var pos = new TextBlock
+            {
+                Name = "Pos",
+                FontSize = 12,
+                Text = _dlt.Übertragungspunkte[i].Position.ToString(CultureInfo.CurrentCulture),
+                Foreground = Black
+            };
+            Canvas.SetTop(pos, PlazierungV1 + posOffset);
+            Canvas.SetLeft(pos, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
+            _visual.Children.Add(pos);
+            KnotenIDs.Add(pos);
+        }
+    }
+    public void ÜbertragungspunkteEntfernen()
+    {
+        foreach (var id in KnotenIDs.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(id);
+        }
+
+        KnotenIDs.Clear();
+        foreach (var üPunktSymbol in ÜPunkte.Cast<Shape>())
+        {
+            _visual.Children.Remove(üPunktSymbol);
+        }
+
+        ÜPunkte.Clear();
     }
 
     private void LagerZeichnen()
@@ -254,7 +327,7 @@ public class Darstellung
 
     private void LastenZeichnen()
     {
-        const int maxLastScreen = 50;
+        const int maxLastScreen = 70;
         var maxLastWert = 1.0;
 
         for (var i = 1; i < _endIndex + 1; i++)
@@ -406,6 +479,220 @@ public class Darstellung
         }
     }
 
+    public void Biegelinie()
+    {
+        const int punkteProAbschnitt = 10;
+        var w = new double[punkteProAbschnitt + 1];
+
+        // Bestimmung der maximalen Durchbiegung und deren Position
+        for (var index = 0; index < _dlt.Übertragungspunkte.Count - 1; index++)
+        {
+            var pIndex = _dlt.Übertragungspunkte[index];
+            var pIndexNext = _dlt.Übertragungspunkte[index + 1];
+            // Durchbiegung am Anfang und am Ende eines Abschnitts
+            w[0] = pIndex.Zr[0];
+            w[punkteProAbschnitt] = pIndexNext.Zl[0];
+
+            // Übertragung über alle anderen Punkte eines Abschnitts
+            var l = pIndexNext.Position - pIndex.Position;
+            var deltaL = l / (punkteProAbschnitt - 1);
+            for (var i = 1; i < punkteProAbschnitt; i++)
+            {
+                var übertragungsmatrix = Werkzeuge.Uebertragungsmatrix(i * deltaL, _dlt.EI);
+                var z = Werkzeuge.MatrixVectorMultiply(übertragungsmatrix, pIndex.Zr);
+                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Lastwert, _dlt.EI);
+                z = Werkzeuge.VectorVectorAdd(z, linienlast);
+                w[i] = z[0];
+            }
+            // maximale Durchbiegung im Abschnitt und Position
+            for (var i = 0; i < w.Length; i++)
+            {
+                if (Math.Abs(w[i]) < Math.Abs(_maxDurchbiegung)) continue;
+                _maxDurchbiegung = w[i];
+                _maxPos = pIndex.Position + i * deltaL;
+            }
+        }
+
+        // Darstellung der Biegelinie
+        var pathGeometry = new PathGeometry();
+        const int durchbiegungMaxScreen = 40;
+        _durchbiegungAuflösung = durchbiegungMaxScreen / Math.Abs(_maxDurchbiegung);
+        var pathFigure = new PathFigure { StartPoint = new Point(0, 0) };
+
+        // Darstellung der Biegelinie pro Abschnitt
+        for (var index = 0; index < _dlt.Übertragungspunkte.Count - 1; index++)
+        {
+            var pIndex = _dlt.Übertragungspunkte[index];
+            var pIndexNext = _dlt.Übertragungspunkte[index + 1];
+            w[0] = pIndex.Zr[0];
+            w[punkteProAbschnitt] = pIndexNext.Zl[0];
+            var polyLinePointArray = new Point[punkteProAbschnitt];
+
+            // Startpunkt im Abschnitt
+            var wPoint = new Point(pIndex.Position * Auflösung, w[0] * _durchbiegungAuflösung);
+            polyLinePointArray[0] = wPoint;
+
+            var l = pIndexNext.Position - pIndex.Position;
+            var deltaL = l / (punkteProAbschnitt - 1);
+            for (var i = 1; i < punkteProAbschnitt - 1; i++)
+            {
+                var pos = pIndex.Position + i * deltaL;
+                var übertragungsmatrix = Werkzeuge.Uebertragungsmatrix(i * deltaL, _dlt.EI);
+                var z = Werkzeuge.MatrixVectorMultiply(übertragungsmatrix, pIndex.Zr);
+
+                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Lastwert, _dlt.EI);
+                z = Werkzeuge.VectorVectorAdd(z, linienlast);
+
+                wPoint = new Point(pos * Auflösung, z[0] * _durchbiegungAuflösung);
+                polyLinePointArray[i] = wPoint;
+            }
+
+            // Endpunkt im Abschnitt
+            wPoint = new Point(pIndexNext.Position * Auflösung, w[^1] * _durchbiegungAuflösung);
+            polyLinePointArray[punkteProAbschnitt - 1] = wPoint;
+
+            var wSegment = new PolyLineSegment
+            {
+                Points = new PointCollection(polyLinePointArray)
+            };
+            pathFigure.Segments.Add(wSegment);
+            pathGeometry.Figures.Add(pathFigure);
+        }
+
+        _durchbiegungPath = new Path()
+        {
+            Name = "Biegelinie",
+            Stroke = Red,
+            StrokeThickness = 2,
+            Data = pathGeometry
+        };
+        Canvas.SetLeft(_durchbiegungPath, PlazierungH);
+        Canvas.SetTop(_durchbiegungPath, PlazierungV1);
+        _visual.Children.Add(_durchbiegungPath);
+    }
+    public void BiegelinieEntfernen()
+    {
+        _visual.Children.Remove(_durchbiegungPath);
+    }
+    public void DurchbiegungMaxTextAnzeigen()
+    {
+        var textPunkt = new Point(_maxPos * Auflösung, _maxDurchbiegung * _durchbiegungAuflösung);
+        var maxText = new TextBlock
+        {
+            FontSize = 12,
+            Text = "max w = " + _maxDurchbiegung.ToString("G4"),
+            Foreground = DarkRed
+        };
+        Canvas.SetTop(maxText, textPunkt.Y + PlazierungV1);
+        Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
+        _visual.Children.Add(maxText);
+        DurchbiegungMaxText.Add(maxText);
+    }
+    public void DurchbiegungMaxTextEntfernen()
+    {
+        foreach (var durchbiegungMaxText in DurchbiegungMaxText.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(durchbiegungMaxText);
+        }
+    }
+
+    public void ReaktionenZeichnen()
+    {
+        const int maxLastScreen = 50;
+        var maxReaktionWert = 1.0;
+
+        if (_dlt.Übertragungspunkte[0].Zr[3] > Math.Abs(maxReaktionWert)) { maxReaktionWert = _dlt.Übertragungspunkte[0].Zr[3]; }
+        for (var i = 1; i < _endIndex; i++)
+        {
+            var reaktion = _dlt.Übertragungspunkte[i].Zr[3] - _dlt.Übertragungspunkte[i].Zl[3];
+            if (Math.Abs(reaktion) > Math.Abs(maxReaktionWert)) maxReaktionWert = reaktion;
+        }
+        if (Math.Abs(_dlt.Übertragungspunkte[^1].Zr[3]) > Math.Abs(maxReaktionWert)) { maxReaktionWert = _dlt.Übertragungspunkte[^1].Zr[3]; }
+        var reaktionAuflösung = maxLastScreen / maxReaktionWert;
+
+        for (var index = 0; index < _endIndex + 1; index++)
+        {
+            var lagerPunkt = _dlt.Übertragungspunkte[index];
+            if (lagerPunkt.Typ != 3) continue;
+
+            var pathGeometry = new PathGeometry();
+            var pathFigure = new PathFigure();
+
+            const int lastPfeilGroesse = 10;
+            double reaktionKraft;
+            if (index == 0) reaktionKraft = lagerPunkt.Zr[3];
+            else if (index == _dlt.Übertragungspunkte.Count - 1) reaktionKraft = -lagerPunkt.Zl[3];
+            else reaktionKraft = lagerPunkt.Zr[3] - lagerPunkt.Zl[3];
+            var endPoint = new Point(lagerPunkt.Position * Auflösung, reaktionKraft * reaktionAuflösung);
+            pathFigure.StartPoint = endPoint;
+
+            var startPoint = TransformPunkt(lagerPunkt, Auflösung);
+            pathFigure.Segments.Add(new LineSegment(startPoint, true));
+
+            var vector = startPoint - endPoint;
+            vector.Normalize();
+            vector *= lastPfeilGroesse;
+            vector = RotateVectorScreen(vector, 30);
+            endPoint = new Point(startPoint.X - vector.X, startPoint.Y - vector.Y);
+            pathFigure.Segments.Add(new LineSegment(endPoint, true));
+
+            vector = RotateVectorScreen(vector, -60);
+            endPoint = new Point(startPoint.X - vector.X, startPoint.Y - vector.Y);
+            pathFigure.Segments.Add(new LineSegment(endPoint, false));
+            pathFigure.Segments.Add(new LineSegment(startPoint, true));
+
+            pathGeometry.Figures.Add(pathFigure);
+            Shape path = new Path()
+            {
+                Name = "Reaktion" + index,
+                Stroke = Green,
+                StrokeThickness = 2,
+                Data = pathGeometry
+            };
+
+            // setz oben/links Position zum Zeichnen auf dem Canvas
+            Canvas.SetLeft(path, PlazierungH);
+            Canvas.SetTop(path, PlazierungV1);
+            // zeichne Shape
+            _visual.Children.Add(path);
+            Reaktionen.Add(path);
+            ReaktionenTexteAnzeigen();
+        }
+    }
+    public void ReaktionenTexteAnzeigen()
+    {
+        for (var index = 0; index <= _endIndex; index++)
+        {
+            var lagerPunkt = _dlt.Übertragungspunkte[index];
+            if (lagerPunkt.Typ != 3) continue;
+
+            double reaktionKraft;
+            if (index == 0) reaktionKraft = lagerPunkt.Zr[3];
+            else if (index == _endIndex) reaktionKraft = -lagerPunkt.Zl[3];
+            else reaktionKraft = lagerPunkt.Zr[3] - lagerPunkt.Zl[3];
+
+            const int reaktionOffset = 40;
+            var reaktion = new TextBlock
+            {
+                Name = "Reaktion",
+                FontSize = 12,
+                Text = reaktionKraft.ToString("F2"),
+                Foreground = Black
+            };
+            Canvas.SetTop(reaktion, PlazierungV1 + reaktionOffset);
+            Canvas.SetLeft(reaktion, lagerPunkt.Position * Auflösung + PlazierungH + 5);
+            _visual.Children.Add(reaktion);
+            ReaktionenTexte.Add(reaktion);
+        }
+    }
+    public void ReaktionenTexteEntfernen()
+    {
+        foreach (var reaktionenText in ReaktionenTexte.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(reaktionenText);
+        }
+    }
+
     public void Momentenverlauf()
     {
         var pathGeometry = new PathGeometry();
@@ -505,6 +792,102 @@ public class Darstellung
         Canvas.SetTop(momentenPath, _plazierungV2);
         _visual.Children.Add(momentenPath);
     }
+    public void MomentenTexteAnzeigen()
+    {
+        const int offset = 0;
+        _endIndex = _dlt.Übertragungspunkte.Count - 1;
+
+        // Momententexte
+        var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[0].Zr[2] * _momentenAuflösung + offset);
+        var mText = _dlt.Übertragungspunkte[0].Zr[2];
+        var schnittgrößenText = new TextBlock
+        {
+            Name = "Moment",
+            FontSize = 12,
+            Text = mText.ToString("F2"),
+            Foreground = Red
+        };
+        Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
+        _visual.Children.Add(schnittgrößenText);
+        MomentenTexte.Add(schnittgrößenText);
+
+        for (var index = 1; index <= _endIndex; index++)
+        {
+            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
+                _dlt.Übertragungspunkte[index].Zl[2] * _momentenAuflösung + offset);
+            mText = _dlt.Übertragungspunkte[index].Zl[2];
+            schnittgrößenText = new TextBlock
+            {
+                Name = "Moment",
+                FontSize = 12,
+                Text = mText.ToString("F2"),
+                Foreground = Red
+            };
+            Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
+            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
+            _visual.Children.Add(schnittgrößenText);
+            MomentenTexte.Add(schnittgrößenText);
+        }
+
+        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
+            _dlt.Übertragungspunkte[_endIndex].Zl[2] * _momentenAuflösung + offset);
+        mText = _dlt.Übertragungspunkte[_endIndex].Zl[2];
+        schnittgrößenText = new TextBlock
+        {
+            Name = "Moment",
+            FontSize = 12,
+            Text = mText.ToString("F2"),
+            Foreground = Red
+        };
+        Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
+        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
+        _visual.Children.Add(schnittgrößenText);
+        MomentenTexte.Add(schnittgrößenText);
+    }
+    public void MomentenTexteEntfernen()
+    {
+        foreach (var momentenText in MomentenTexte.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(momentenText);
+        }
+    }
+    public void MomentenMaxTexteAnzeigen()
+    {
+        _endIndex = _dlt.Übertragungspunkte.Count - 1;
+
+        // Momententexte
+        for (var index = 1; index <= _endIndex; index++)
+        {
+            //  Text an Maximalmoment unter Gleichlast
+            var pi = _dlt.Übertragungspunkte[index];
+            var pim1 = _dlt.Übertragungspunkte[index - 1];
+            if (!(pi.Lastlänge > double.Epsilon)) continue;
+            var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
+            if (abstandMax >= pi.Lastlänge) continue;
+            var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+
+            var textPunkt = new Point((pim1.Position + abstandMax) * Auflösung, mMax * _momentenAuflösung);
+            var maxText = new TextBlock
+            {
+                FontSize = 12,
+                Text = "max. Moment = " + mMax.ToString("F2"),
+                Foreground = DarkRed
+            };
+            Canvas.SetTop(maxText, textPunkt.Y + _plazierungV2);
+            Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
+            _visual.Children.Add(maxText);
+            MomentenMaxTexte.Add(maxText);
+        }
+    }
+    public void MomentenMaxTexteEntfernen()
+    {
+        foreach (var momentenMaxText in MomentenMaxTexte.Cast<TextBlock>())
+        {
+            _visual.Children.Remove(momentenMaxText);
+        }
+    }
 
     public void Querkraftverlauf()
     {
@@ -585,89 +968,6 @@ public class Darstellung
         Canvas.SetTop(querkraftPath, _plazierungV3);
         _visual.Children.Add(querkraftPath);
     }
-
-    public void MomentenTexteAnzeigen()
-    {
-        const int offset = 0;
-        _endIndex = _dlt.Übertragungspunkte.Count - 1;
-
-        // Momententexte
-        var textPunkt = new Point(_dlt.Übertragungspunkte[0].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[0].Zr[2] * _momentenAuflösung + offset);
-        var mText = _dlt.Übertragungspunkte[0].Zr[2];
-        var schnittgrößenText = new TextBlock
-        {
-            Name = "Moment",
-            FontSize = 12,
-            Text = mText.ToString("F2"),
-            Foreground = Red
-        };
-        Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
-        _visual.Children.Add(schnittgrößenText);
-        MomentenTexte.Add(schnittgrößenText);
-
-        for (var index = 1; index <= _endIndex; index++)
-        {
-            textPunkt = new Point(_dlt.Übertragungspunkte[index].Position * Auflösung + offset,
-                _dlt.Übertragungspunkte[index].Zl[2] * _momentenAuflösung + offset);
-            mText = _dlt.Übertragungspunkte[index].Zl[2];
-            schnittgrößenText = new TextBlock
-            {
-                Name = "Moment",
-                FontSize = 12,
-                Text = mText.ToString("F2"),
-                Foreground = Red
-            };
-            Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-            Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
-            _visual.Children.Add(schnittgrößenText);
-            MomentenTexte.Add(schnittgrößenText);
-        }
-
-        textPunkt = new Point(_dlt.Übertragungspunkte[_endIndex].Position * Auflösung + offset,
-            _dlt.Übertragungspunkte[_endIndex].Zl[2] * _momentenAuflösung + offset);
-        mText = _dlt.Übertragungspunkte[_endIndex].Zl[2];
-        schnittgrößenText = new TextBlock
-        {
-            Name = "Moment",
-            FontSize = 12,
-            Text = mText.ToString("F2"),
-            Foreground = Red
-        };
-        Canvas.SetTop(schnittgrößenText, textPunkt.Y + _plazierungV2);
-        Canvas.SetLeft(schnittgrößenText, textPunkt.X + PlazierungH);
-        _visual.Children.Add(schnittgrößenText);
-        MomentenTexte.Add(schnittgrößenText);
-    }
-    public void MomentenMaxTexteAnzeigen()
-    {
-        _endIndex = _dlt.Übertragungspunkte.Count - 1;
-
-        // Momententexte
-        for (var index = 1; index <= _endIndex; index++)
-        {
-            //  Text an Maximalmoment unter Gleichlast
-            var pi = _dlt.Übertragungspunkte[index];
-            var pim1 = _dlt.Übertragungspunkte[index - 1];
-            if (!(pi.Lastlänge > double.Epsilon)) continue;
-            var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
-            if (abstandMax >= pi.Lastlänge) continue;
-            var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
-
-            var textPunkt = new Point((pim1.Position + abstandMax) * Auflösung, mMax * _momentenAuflösung);
-            var maxText = new TextBlock
-            {
-                FontSize = 12,
-                Text = "max. Moment = " + mMax.ToString("F2"),
-                Foreground = DarkRed
-            };
-            Canvas.SetTop(maxText, textPunkt.Y + _plazierungV2);
-            Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
-            _visual.Children.Add(maxText);
-            MomentenMaxTexte.Add(maxText);
-        }
-    }
     public void QuerkraftTexteAnzeigen()
     {
         const int offset = 0;
@@ -734,91 +1034,12 @@ public class Darstellung
         _visual.Children.Add(schnittgrößenText);
         QuerkraftTexte.Add(schnittgrößenText);
     }
-
-    public void MomentenTexteEntfernen()
-    {
-        foreach (var momentenText in MomentenTexte.Cast<TextBlock>())
-        {
-            _visual.Children.Remove(momentenText);
-        }
-    }
-    public void MomentenMaxTexteEntfernen()
-    {
-        foreach (var momentenMaxText in MomentenMaxTexte.Cast<TextBlock>())
-        {
-            _visual.Children.Remove(momentenMaxText);
-        }
-    }
     public void QuerkraftTexteEntfernen()
     {
         foreach (var querkraftText in QuerkraftTexte.Cast<TextBlock>())
         {
             _visual.Children.Remove(querkraftText);
         }
-    }
-
-    public void ÜbertragungspunkteAnzeigen()
-    {
-        // Übertragungspunkte werden als EllipseGeometry hinzugefügt
-        for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
-        {
-            var name = "Übertragungspunkt" + i;
-            var punkt = new Point(_dlt.Übertragungspunkte[i].Position * Auflösung, 0);
-            var übertragung = new EllipseGeometry(punkt, 5, 5);
-
-            // Übertragungspunkte werden gezeichnet
-            Shape üPunktSymbol = new Path()
-            {
-                Name = name,
-                Stroke = Blue,
-                StrokeThickness = 1,
-                Data = übertragung
-            };
-            _visual.Children.Add(üPunktSymbol);
-            Canvas.SetLeft(üPunktSymbol, PlazierungH);
-            Canvas.SetTop(üPunktSymbol, PlazierungV1);
-            ÜPunkte.Add(üPunktSymbol);
-
-            var id = new TextBlock
-            {
-                Name = "Id",
-                FontSize = 12,
-                Text = i.ToString(),
-                Foreground = Black
-            };
-            Canvas.SetTop(id, PlazierungV1);
-            Canvas.SetLeft(id, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
-            _visual.Children.Add(id);
-            KnotenIDs.Add(id);
-
-            const int posOffset = 20;
-            var pos = new TextBlock
-            {
-                Name = "Pos",
-                FontSize = 12,
-                Text = _dlt.Übertragungspunkte[i].Position.ToString(CultureInfo.CurrentCulture),
-                Foreground = Black
-            };
-            Canvas.SetTop(pos, PlazierungV1 + posOffset);
-            Canvas.SetLeft(pos, _dlt.Übertragungspunkte[i].Position * Auflösung + PlazierungH + 5);
-            _visual.Children.Add(pos);
-            KnotenIDs.Add(pos);
-        }
-    }
-    public void ÜbertragungspunkteEntfernen()
-    {
-        foreach (var id in KnotenIDs.Cast<TextBlock>())
-        {
-            _visual.Children.Remove(id);
-        }
-
-        KnotenIDs.Clear();
-        foreach (var üPunktSymbol in ÜPunkte.Cast<Shape>())
-        {
-            _visual.Children.Remove(üPunktSymbol);
-        }
-
-        ÜPunkte.Clear();
     }
 
     private static Point TransformPunkt(Übertragungspunkt knoten, double auflösung)

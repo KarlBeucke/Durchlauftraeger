@@ -109,9 +109,13 @@ public class Berechnung
                     return;
                 }
                 Einfeldträger();
+                _darstellung.ReaktionenZeichnen();
+                _darstellung.Biegelinie();
+                _darstellung.DurchbiegungMaxTextAnzeigen();
                 _darstellung.Momentenverlauf();
                 _darstellung.Querkraftverlauf();
                 _darstellung.MomentenTexteAnzeigen();
+                _darstellung.MomentenMaxTexteAnzeigen();
                 _darstellung.QuerkraftTexteAnzeigen();
                 return;
             }
@@ -240,9 +244,13 @@ public class Berechnung
                 piI.Zr = Werkzeuge.VectorVectorAdd(piI.Zl, piI.Punktlast);
             }
         }
+        _darstellung.ReaktionenZeichnen();
+        _darstellung.Biegelinie();
+        _darstellung.DurchbiegungMaxTextAnzeigen();
         _darstellung.Momentenverlauf();
         _darstellung.Querkraftverlauf();
         _darstellung.MomentenTexteAnzeigen();
+        _darstellung.MomentenMaxTexteAnzeigen();
         _darstellung.QuerkraftTexteAnzeigen();
     }
 

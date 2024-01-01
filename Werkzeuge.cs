@@ -12,6 +12,7 @@ public static class Werkzeuge
                              { 0, 0,    0      ,1}};
         return matrix;
     }
+
     public static double[] Linienlast(double länge, double wert, double ei)
     {
         var linienlast = new double[4];

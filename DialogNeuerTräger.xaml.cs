@@ -39,7 +39,7 @@ public partial class DialogNeuerTräger
         _dlt.EndeFrei = false;
         if ((bool)AnfangGelenkig.IsChecked!) _dlt.AnfangFest = false;
         else if ((bool)AnfangEingespannt.IsChecked!) _dlt.AnfangFest = true;
-        if ((bool)EndeGelenkig.IsChecked!) _dlt.EndeFest = false;
+        if ((bool)EndeGelenkig.IsChecked!) { _dlt.EndeFest = false; _dlt.EndeFrei = false; }
         else if ((bool)EndeEingespannt.IsChecked!) _dlt.EndeFest = true;
         if ((bool)EndeFrei.IsChecked!) { _dlt.EndeFrei = true; _dlt.EndeFest = false; }
 
@@ -96,14 +96,14 @@ public partial class DialogNeuerTräger
         }
 
         übertragungsPunkt = new Übertragungspunkt(_dlt.Trägerlänge);
-        if (_dlt.EndeFest)
+        if (_dlt.EndeFrei)
         {
-            übertragungsPunkt.Typ = 3;
+            übertragungsPunkt.Typ = 1;
             _dlt.Übertragungspunkte.Add(übertragungsPunkt);
         }
         else
         {
-            übertragungsPunkt.Typ = 1;
+            übertragungsPunkt.Typ = 3;
             _dlt.Übertragungspunkte.Add(übertragungsPunkt);
         }
     }

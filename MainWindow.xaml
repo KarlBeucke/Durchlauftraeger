@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Durchlaufträgerberechnung Stand Dezember 2023                                                                                        
+        Title="Durchlaufträgerberechnung Stand Januar 2024                                                                                        
                © Prof. Karl Beucke" Height="800" Width="1200" Closing="MainWindowClosing">
     <ScrollViewer HorizontalScrollBarVisibility="Auto" Margin="0,0,0,0">
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -43,29 +43,41 @@
                     Click="NeueGleichlast">
                     <Image Source="Ressourcen/Gleichlast.jpg"></Image>
                 </Button>
-                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
-                    Margin="280,0,0,0" Background="Yellow"
+                <Button Grid.Row="0" Height="30" Width="55" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="280,0,0,0" Background="SkyBlue"
                     ToolTip="neue Berechnung durchführen"
                     Click="NeueBerechnung">
-                    <Image Source="Ressourcen/Zustand.jpg" Height="25" Width="43"></Image>
+                    <TextBlock FontWeight="Bold" Height="15" FontSize="10">berechnen</TextBlock>
                 </Button>
-                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
-                        Margin="335,0,0,0" Background="LightGray"
+                <Button Grid.Row="0" Height="30" Width="40" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="340,0,0,0" Background="LightCoral"
                         ToolTip="Darstellung der Übertragungspunkte an-/ausschalten"
                         Click="ÜbertragungspunkteAnzeigen">
-                        <Image Source="Ressourcen/UePunkte.jpg" Height="25" Width="43"></Image>
+                        <Image Source="Ressourcen/Ü.jpg" Height="25" Width="30"></Image>
                 </Button>
-                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
-                        Margin="390,0,0,0" Background="LightGray"
-                        ToolTip="Momententexte an-/ausschalten"
-                        Click="MomentenTexteAnzeigen">
-                        <Image Source="Ressourcen/Biegemomente.jpg" Height="25" Width="43"></Image>
+                <Button Grid.Row="0" Height="30" Width="40" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="390,0,0,0" Background="Yellow"
+                        ToolTip="Biegelinie an-/ausschalten"
+                        Click="BiegelinieAnzeigen">
+                    <Image Source="Ressourcen/w.jpg" Height="25" Width="43"></Image>
                 </Button>
-                <Button Grid.Row="0" Height="30" Width="50" VerticalAlignment="Center" HorizontalAlignment="Left"
-                        Margin="450,0,0,0" Background="LightGray"
+                <Button Grid.Row="0" Height="30" Width="40" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="433,0,0,0" Background="Yellow"
                         ToolTip="Querkrafttexte an-/ausschalten"
                         Click="QuerkraftTexteAnzeigen">
-                    <Image Source="Ressourcen/Querkräfte.jpg" Height="25" Width="43"></Image>
+                    <Image Source="Ressourcen/Q.jpg" Height="25" Width="43"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="40" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="478,0,0,0" Background="Yellow"
+                        ToolTip="Momententexte an-/ausschalten"
+                        Click="MomentenTexteAnzeigen">
+                        <Image Source="Ressourcen/M.jpg" Height="25" Width="43"></Image>
+                </Button>
+                <Button Grid.Row="0" Height="30" Width="40" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        Margin="530,0,0,0" Background="GreenYellow"
+                        ToolTip="Reaktionskräfte an-/ausschalten"
+                        Click="ReaktionenAnzeigen">
+                    <Image Source="Ressourcen/R.jpg" Height="25" Width="43"></Image>
                 </Button>
             </Grid>
             <Canvas x:Name="DltVisuell" Height="750" Width="1150" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
