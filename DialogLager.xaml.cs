@@ -47,7 +47,7 @@ public partial class DialogLager
             {
                 if (_position > _dlt.Trägerlänge) _dlt.Trägerlänge = _position;
                 {
-                    _lastWertAlt = _dlt.Übertragungspunkte[_index + 1].Lastwert;
+                    _lastWertAlt = _dlt.Übertragungspunkte[_index + 1].Q;
                     LagerLöschen();
                     NeuesLager();
                 }
@@ -58,7 +58,7 @@ public partial class DialogLager
                 var pim1 = _dlt.Übertragungspunkte[_index - 1];
                 if (_position > _dlt.Trägerlänge) _dlt.Trägerlänge = _position;
 
-                switch (pi.Lastlänge)
+                switch (pi.Q)
                 {
                     // Endlager ohne Gleichlast nach rechts verschoben
                     case 0 when _position > pi.Position:
@@ -75,7 +75,7 @@ public partial class DialogLager
                     case 0 when _position < pi.Position
                                 && Math.Abs(_position - pim1.Position) < double.Epsilon:
                         {
-                            if (pim1.Lastlänge > 0)
+                            if (pim1.Q > 0)
                             {
                                 pim1.Typ = 3;
                                 _dlt.Übertragungspunkte.RemoveAt(_dlt.Übertragungspunkte.Count - 1);
@@ -87,7 +87,7 @@ public partial class DialogLager
                     case 0 when _position < pi.Position
                                 && _position < pim1.Position:
                         {
-                            if (pim1.Lastlänge > 0)
+                            if (pim1.Q > 0)
                             {
                                 _ = MessageBox.Show("Endpunkt unter Gleichlast, " +
                                                   "nicht implementiert", "Durchlaufträger");
@@ -103,7 +103,7 @@ public partial class DialogLager
                         break;
                     // Endlager mit Gleichlast nach links 
                     case > 0 when _position < pi.Position:
-                        pi.Lastlänge -= pi.Position - _position;
+                        //pi.Lastlänge -= pi.Position - _position;
                         pi.Position = _position;
                         _dlt.Trägerlänge = _position;
                         break;
@@ -152,7 +152,7 @@ public partial class DialogLager
             _lagerPunkt = new Übertragungspunkt(_position)
             {
                 Typ = 3,
-                Lastwert = _nextPunkt.Lastwert
+                Q = _nextPunkt.Q
             };
             _dlt.Übertragungspunkte.Add(_lagerPunkt);
 
@@ -160,7 +160,7 @@ public partial class DialogLager
             {
                 _nextPunkt.Lastlänge = _nextPunkt.Position - _position;
                 _lagerPunkt.Lastlänge = _lastLängeAlt - _nextPunkt.Lastlänge;
-                _lagerPunkt.Lastwert = _lagerPunkt.Lastwert;
+                _lagerPunkt.Q = _lagerPunkt.Q;
             }
         }
         // Übertragungspunkt vorhanden
@@ -202,25 +202,24 @@ public partial class DialogLager
 
         var pip1 = _dlt.Übertragungspunkte[_index + 1];
         // keine Gleichlast am Lager
-        if (pi.Lastlänge == 0 && pip1.Lastlänge == 0)
+        if (pi.Q == 0 && pip1.Q == 0)
         {
             _dlt.Übertragungspunkte.RemoveAt(_index);
         }
 
         // gleicher Wert der Gleichlast vor und hinter Lager
-        else if (Math.Abs(pip1.Lastwert - pi.Lastwert) < double.Epsilon)
+        else if (Math.Abs(pip1.Q - pi.Q) < double.Epsilon)
         {
-            pip1.Lastlänge += pi.Lastlänge;
-            if (pi.Lastlänge > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
+            if (pi.Q > 0) _dlt.Übertragungspunkte.RemoveAt(_index);
             else
             {
                 pi.Typ = 1;
-                pi.Lastwert = _lastWertAlt;
+                pi.Q = _lastWertAlt;
             }
         }
 
         // Lager entweder am Anfang oder Ende der Gleichlast
-        else if (pip1.Lastlänge != 0 || pi.Lastlänge != 0)
+        else if (pip1.Q != 0 || pi.Q != 0)
         {
             pi.Typ = 1;
         }

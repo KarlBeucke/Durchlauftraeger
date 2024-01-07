@@ -85,7 +85,7 @@ public class Berechnung
                         pik.A = Werkzeuge.Uebertragungsmatrix(l, _dlt.EI);
                         pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A, z);
                         pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A, lü);
-                        var linienlast = Werkzeuge.Linienlast(l, pik.Lastwert, _dlt.EI);
+                        var linienlast = Werkzeuge.Linienlast(l, pik.Q, _dlt.EI);
                         pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, linienlast);
                         pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, pik.Punktlast);
                         break;
@@ -95,7 +95,7 @@ public class Berechnung
                         pik.A = Werkzeuge.Uebertragungsmatrix(l, _dlt.EI);
                         pik.Z = Werkzeuge.MatrixMatrixMultiply(pik.A, z);
                         pik.LastÜ = Werkzeuge.MatrixVectorMultiply(pik.A, lü);
-                        linienlast = Werkzeuge.Linienlast(l, pik.Lastwert, _dlt.EI);
+                        linienlast = Werkzeuge.Linienlast(l, pik.Q, _dlt.EI);
                         pik.LastÜ = Werkzeuge.VectorVectorAdd(pik.LastÜ, linienlast);
                         break;
                 }
@@ -195,7 +195,7 @@ public class Berechnung
             var pkEm1 = _dlt.Übertragungspunkte[felder[^1][index - 1]];
             var l = pkE.Position - pkEm1.Position;
             pkE.Zl = Werkzeuge.MatrixVectorMultiply(pkE.A, pkEm1.Zr);
-            var linienlast = Werkzeuge.Linienlast(l, pkE.Lastwert, _dlt.EI);
+            var linienlast = Werkzeuge.Linienlast(l, pkE.Q, _dlt.EI);
             pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, linienlast);
             if (index == felder[^1].Count - 1) break;
             pkE.Zr = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Punktlast);
@@ -237,7 +237,8 @@ public class Berechnung
                 var piIm1 = _dlt.Übertragungspunkte[felder[i][index - 1]];
                 var piI = _dlt.Übertragungspunkte[felder[i][index]];
                 piI.Zl = Werkzeuge.MatrixVectorMultiply(piI.A, piIm1.Zr);
-                var linienlast = Werkzeuge.Linienlast(piI.Lastlänge, piI.Lastwert, _dlt.EI);
+                var l = piI.Position - piIm1.Position;
+                var linienlast = Werkzeuge.Linienlast(l, piI.Q, _dlt.EI);
                 piI.Zl = Werkzeuge.VectorVectorAdd(piI.Zl, linienlast);
                 // letzter Punkt im Feld hat nur Zl
                 if (index == felder[i].Count - 1) break;
@@ -292,7 +293,8 @@ public class Berechnung
             var pkE = _dlt.Übertragungspunkte[index];
             var pkEm1 = _dlt.Übertragungspunkte[index - 1];
             pkE.Zl = Werkzeuge.MatrixVectorMultiply(pkE.A, pkEm1.Zr);
-            var linienlast = Werkzeuge.Linienlast(pkE.Lastlänge, pkE.Lastwert, _dlt.EI);
+            var l = pkE.Position - pkEm1.Position;
+            var linienlast = Werkzeuge.Linienlast(l, pkE.Q, _dlt.EI);
             pkE.Zl = Werkzeuge.VectorVectorAdd(pkE.Zl, linienlast);
             if (index == _dlt.Übertragungspunkte.Count - 1) break;
             pkE.Zr = Werkzeuge.VectorVectorAdd(pkE.Zl, pkE.Punktlast);
@@ -304,7 +306,8 @@ public class Berechnung
             var pik = _dlt.Übertragungspunkte[k];
             var pikm1 = _dlt.Übertragungspunkte[k - 1];
             pik.Zl = Werkzeuge.MatrixVectorMultiply(pik.A, pikm1.Zr);
-            var linienlast = Werkzeuge.Linienlast(pik.Lastlänge, pik.Lastwert, _dlt.EI);
+            var l = pik.Position - pikm1.Position;
+            var linienlast = Werkzeuge.Linienlast(l, pik.Q, _dlt.EI);
             pik.Zl = Werkzeuge.VectorVectorAdd(pik.Zl, linienlast);
             if (k == _dlt.Übertragungspunkte.Count - 1) continue;
             pik.Zr = Werkzeuge.VectorVectorAdd(pik.Zl, pik.Punktlast);
@@ -315,7 +318,7 @@ public class Berechnung
     {
         var keineLasten = true;
         foreach (var unused in _dlt.Übertragungspunkte.
-                     Where(punkt => punkt.Lastwert != 0 || punkt.Punktlast.Sum() != 0))
+                     Where(punkt => punkt.Q != 0 || punkt.Punktlast.Sum() != 0))
         { keineLasten = false; }
         return keineLasten;
     }

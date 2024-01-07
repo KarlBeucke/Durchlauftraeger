@@ -49,11 +49,10 @@ public partial class DialogGleichlast
             if (Math.Abs(_dlt.Übertragungspunkte[_endIndex].Position - (_anfang + _länge)) < double.Epsilon
                 && Math.Abs(_dlt.Übertragungspunkte[_anfangIndex].Position - _anfang) < double.Epsilon)
             {
-                piE.Lastwert = _lastwert;
+                piE.Q = _lastwert;
                 Close();
                 return;
             }
-
             LöschLinienlast();
         }
 
@@ -63,8 +62,8 @@ public partial class DialogGleichlast
         for (i = 1; i < _dlt.Übertragungspunkte.Count; i++)
         {
             var pi = _dlt.Übertragungspunkte[i];
-            if (!(pi.Position > _anfang)) continue;
-            if (pi.Lastlänge > 0)
+            if (!(pi.Position >= _anfang)) continue;
+            if (pi.Q > 0)
             {
                 _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt", " Eingabe Gleichlast");
                 Anfang.Text = "";
@@ -78,7 +77,7 @@ public partial class DialogGleichlast
         {
             var pk = _dlt.Übertragungspunkte[k];
             if (!(pk.Position >= _anfang + _länge)) continue;
-            if (pk.Lastlänge > 0)
+            if (pk.Q > 0)
             {
                 _ = MessageBox.Show("überlappende Gleichlasten werden nicht unterstützt",
                     " Eingabe Gleichlast");
@@ -124,14 +123,14 @@ public partial class DialogGleichlast
             {
                 Typ = 1,
                 Lastlänge = _länge,
-                Lastwert = _lastwert,
+                Q = _lastwert,
             };
             _dlt.Übertragungspunkte.Add(übertragungsPunktE);
         }
         else
         {
             übertragungsPunktE!.Lastlänge = _länge;
-            übertragungsPunktE.Lastwert = _lastwert;
+            übertragungsPunktE.Q = _lastwert;
         }
 
         // ordne die Übertragungspunkte in aufsteigender x-Richtung
@@ -140,14 +139,6 @@ public partial class DialogGleichlast
         _anfangIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktA!);
         _endIndex = _dlt.Übertragungspunkte.IndexOf(übertragungsPunktE);
 
-        // ggf. Längen an Übertragungspunkten zwischen Anfang und Ende anpassen
-        for (var k = 0; k < _endIndex - _anfangIndex; k++)
-        {
-            var piE = _dlt.Übertragungspunkte[_endIndex - k];
-            var piA = _dlt.Übertragungspunkte[_endIndex - k - 1];
-            piE.Lastlänge = piE.Position - piA.Position;
-            piE.Lastwert = _lastwert;
-        }
         Close();
         _berechnung?.Neuberechnung();
     }
@@ -183,16 +174,16 @@ public partial class DialogGleichlast
 
         // Übertragungspunkt am Ende
         pi.Lastlänge = 0;
-        pi.Lastwert = 0;
+        pi.Q = 0;
         if (pi.Typ == 1
-            && _dlt.Übertragungspunkte[_endIndex + 1].Lastlänge == 0
+            && _dlt.Übertragungspunkte[_endIndex + 1].Q == 0
             && pi.Punktlast.Sum() == 0)
         {
             _dlt.Übertragungspunkte.RemoveAt(_endIndex);
         }
 
         // Übertragungspunkt am Anfang löschen, falls dort keine Punktlast ist
-        if (piA.Typ == 1 && piA.Lastlänge == 0 && piA.Punktlast.Sum() == 0)
+        if (piA is { Typ: 1, Q: 0 } && piA.Punktlast.Sum() == 0)
         {
             _dlt.Übertragungspunkte.RemoveAt(indexA);
         }

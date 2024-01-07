@@ -36,13 +36,19 @@ public class Übertragungspunkt
 {
     public double Position { get; set; }
     public short Typ { get; set; }
-    public double Lastwert { get; set; }
-    public double Lastlänge { get; set; }
     public double[,] A { get; set; }
     public double[,] Z { get; set; }
     public double[] Zl { get; set; }
     public double[] Zr { get; set; }
     public double[] Punktlast { get; set; }
+    public double Q { get; set; }
+    public double Qa { get; set; }
+    public double Qb { get; set; }
+    // Lastlänge ist die Gesamtlänge der verteilten Last
+    // Anfangs- und Endpunkt sind Übertragungspunkte, aber nicht notwendigerweise sukzessive
+    // Übertragung zwischen 2 Punkten erfordert Lastübertragung zwischen diesen Punkten
+    // d.h. die Länge der Lastverteilung ist der Abstand zwischen beiden Punkten
+    public double Lastlänge { get; set; }
     public double[] LastÜ { get; set; }
     public double[] Lk { get; init; }
     public double[,] AnfangKopplung { get; set; }

@@ -365,7 +365,7 @@ public partial class MainWindow
                 {
                     Anfang = { Text = _dlt.Übertragungspunkte[anfangIndex].Position.ToString("G4") },
                     Länge = { Text = _dlt.Übertragungspunkte[endIndex].Lastlänge.ToString("G4") },
-                    Lastwert = { Text = (_dlt.Übertragungspunkte[endIndex].Lastwert).ToString("G4") }
+                    Lastwert = { Text = (_dlt.Übertragungspunkte[endIndex].Q).ToString("G4") }
                 };
                 MyPopup.IsOpen = false;
                 gleichlast.ShowDialog();

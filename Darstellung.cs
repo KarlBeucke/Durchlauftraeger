@@ -25,6 +25,7 @@ public class Darstellung
     private double _momentenAuflösung;
     private double _querkraftAuflösung;
     private double _durchbiegungAuflösung;
+    private double _lastAuflösung;
     private List<object> ÜPunkte { get; }
     private List<object> KnotenIDs { get; }
     private List<object> DurchbiegungMaxText { get; }
@@ -327,19 +328,17 @@ public class Darstellung
 
     private void LastenZeichnen()
     {
-        const int maxLastScreen = 70;
-        var maxLastWert = 1.0;
+        const int maxLastScreen = 40;
+        double maxLastWert = 0;
 
         for (var i = 1; i < _endIndex + 1; i++)
         {
             if (Math.Abs(_dlt.Übertragungspunkte[i].Punktlast[3]) > Math.Abs(maxLastWert))
                 maxLastWert = Math.Abs(_dlt.Übertragungspunkte[i].Punktlast[3]);
-            if (Math.Abs(_dlt.Übertragungspunkte[i].Lastwert) > Math.Abs(maxLastWert))
-                maxLastWert = Math.Abs(_dlt.Übertragungspunkte[i].Lastwert);
+            if (Math.Abs(_dlt.Übertragungspunkte[i].Q) > Math.Abs(maxLastWert))
+                maxLastWert = Math.Abs(_dlt.Übertragungspunkte[i].Q);
         }
-
-
-        var lastAuflösung = maxLastScreen / maxLastWert;
+        _lastAuflösung = maxLastScreen / maxLastWert;
 
         for (var index = 1; index < _endIndex + 1; index++)
         {
@@ -353,7 +352,7 @@ public class Darstellung
 
                 const int lastPfeilGroesse = 10;
                 var lastWert = lastPunkt.Punktlast[3];
-                var endPoint = new Point(lastPunkt.Position * Auflösung, lastWert * lastAuflösung);
+                var endPoint = new Point(lastPunkt.Position * Auflösung, lastWert * _lastAuflösung);
                 pathFigure.StartPoint = endPoint;
 
                 var startPoint = TransformPunkt(lastPunkt, Auflösung);
@@ -388,14 +387,14 @@ public class Darstellung
             }
 
             // Gleichlast
-            if (!(lastPunkt.Lastlänge > double.Epsilon)) continue;
+            if (!(lastPunkt.Q > double.Epsilon)) continue;
             {
                 const int lastPfeilGroesse = 6;
 
                 var pathGeometry = new PathGeometry();
                 var pathFigure = new PathFigure();
                 var indexA = 0;
-                var lastWert = -lastPunkt.Lastwert;
+                var lastWert = -lastPunkt.Q;
                 // finde Übertragungspunkt am Anfang der Gleichlast
                 for (var i = 0; i < _dlt.Übertragungspunkte.Count; i++)
                 {
@@ -414,7 +413,7 @@ public class Darstellung
                 pathFigure.StartPoint = startPunkt;
                 var lastVektor = RotateVectorScreen(vector, -90);
                 lastVektor.Normalize();
-                var vec = lastVektor * lastAuflösung * lastWert;
+                var vec = lastVektor * _lastAuflösung * lastWert;
                 var nextPunkt = new Point(startPunkt.X, startPunkt.Y - vec.Y);
 
                 if (Math.Abs(vec.Length) > double.Epsilon)
@@ -436,7 +435,7 @@ public class Darstellung
                 //Linie zum Lastende
                 lastVektor = RotateVectorScreen(vector, 90);
                 lastVektor.Normalize();
-                vec = lastVektor * lastAuflösung * lastWert;
+                vec = lastVektor * _lastAuflösung * lastWert;
                 nextPunkt = new Point(endPunkt.X + vec.X, endPunkt.Y + vec.Y);
                 pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
 
@@ -483,6 +482,7 @@ public class Darstellung
     {
         const int punkteProAbschnitt = 10;
         var w = new double[punkteProAbschnitt + 1];
+        _maxDurchbiegung = 0;
 
         // Bestimmung der maximalen Durchbiegung und deren Position
         for (var index = 0; index < _dlt.Übertragungspunkte.Count - 1; index++)
@@ -500,7 +500,7 @@ public class Darstellung
             {
                 var übertragungsmatrix = Werkzeuge.Uebertragungsmatrix(i * deltaL, _dlt.EI);
                 var z = Werkzeuge.MatrixVectorMultiply(übertragungsmatrix, pIndex.Zr);
-                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Lastwert, _dlt.EI);
+                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Q, _dlt.EI);
                 z = Werkzeuge.VectorVectorAdd(z, linienlast);
                 w[i] = z[0];
             }
@@ -515,7 +515,7 @@ public class Darstellung
 
         // Darstellung der Biegelinie
         var pathGeometry = new PathGeometry();
-        const int durchbiegungMaxScreen = 40;
+        const int durchbiegungMaxScreen = 20;
         _durchbiegungAuflösung = durchbiegungMaxScreen / Math.Abs(_maxDurchbiegung);
         var pathFigure = new PathFigure { StartPoint = new Point(0, 0) };
 
@@ -540,7 +540,7 @@ public class Darstellung
                 var übertragungsmatrix = Werkzeuge.Uebertragungsmatrix(i * deltaL, _dlt.EI);
                 var z = Werkzeuge.MatrixVectorMultiply(übertragungsmatrix, pIndex.Zr);
 
-                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Lastwert, _dlt.EI);
+                var linienlast = Werkzeuge.Linienlast(i * deltaL, pIndexNext.Q, _dlt.EI);
                 z = Werkzeuge.VectorVectorAdd(z, linienlast);
 
                 wPoint = new Point(pos * Auflösung, z[0] * _durchbiegungAuflösung);
@@ -580,11 +580,11 @@ public class Darstellung
         var maxText = new TextBlock
         {
             FontSize = 12,
-            Text = "max w = " + _maxDurchbiegung.ToString("G4"),
+            Text = "max w= " + _maxDurchbiegung.ToString("G4"),
             Foreground = DarkRed
         };
         Canvas.SetTop(maxText, textPunkt.Y + PlazierungV1);
-        Canvas.SetLeft(maxText, textPunkt.X + PlazierungH);
+        Canvas.SetLeft(maxText, textPunkt.X);
         _visual.Children.Add(maxText);
         DurchbiegungMaxText.Add(maxText);
     }
@@ -598,18 +598,6 @@ public class Darstellung
 
     public void ReaktionenZeichnen()
     {
-        const int maxLastScreen = 50;
-        var maxReaktionWert = 1.0;
-
-        if (_dlt.Übertragungspunkte[0].Zr[3] > Math.Abs(maxReaktionWert)) { maxReaktionWert = _dlt.Übertragungspunkte[0].Zr[3]; }
-        for (var i = 1; i < _endIndex; i++)
-        {
-            var reaktion = _dlt.Übertragungspunkte[i].Zr[3] - _dlt.Übertragungspunkte[i].Zl[3];
-            if (Math.Abs(reaktion) > Math.Abs(maxReaktionWert)) maxReaktionWert = reaktion;
-        }
-        if (Math.Abs(_dlt.Übertragungspunkte[^1].Zr[3]) > Math.Abs(maxReaktionWert)) { maxReaktionWert = _dlt.Übertragungspunkte[^1].Zr[3]; }
-        var reaktionAuflösung = maxLastScreen / maxReaktionWert;
-
         for (var index = 0; index < _endIndex + 1; index++)
         {
             var lagerPunkt = _dlt.Übertragungspunkte[index];
@@ -623,7 +611,7 @@ public class Darstellung
             if (index == 0) reaktionKraft = lagerPunkt.Zr[3];
             else if (index == _dlt.Übertragungspunkte.Count - 1) reaktionKraft = -lagerPunkt.Zl[3];
             else reaktionKraft = lagerPunkt.Zr[3] - lagerPunkt.Zl[3];
-            var endPoint = new Point(lagerPunkt.Position * Auflösung, reaktionKraft * reaktionAuflösung);
+            var endPoint = new Point(lagerPunkt.Position * Auflösung, reaktionKraft * _lastAuflösung);
             pathFigure.StartPoint = endPoint;
 
             var startPoint = TransformPunkt(lagerPunkt, Auflösung);
@@ -715,16 +703,16 @@ public class Darstellung
         var maxMoment = Math.Abs(_dlt.Übertragungspunkte[0].Zr[2]);
         for (var i = 1; i < _dlt.Übertragungspunkte.Count; i++)
         {
-            if (Math.Abs(_dlt.Übertragungspunkte[i].Zr[2]) > maxMoment)
-            {
-                maxMoment = Math.Abs(_dlt.Übertragungspunkte[i].Zr[2]);
-            }
+            var pi = _dlt.Übertragungspunkte[i];
+            var pim1 = _dlt.Übertragungspunkte[i - 1];
+            if (Math.Abs(pi.Zr[2]) > maxMoment) { maxMoment = Math.Abs(pi.Zr[2]); }
 
-            if (!(Math.Abs(_dlt.Übertragungspunkte[i].Lastlänge) > 0)) continue;
-            // maxMoment unter Gleichlast = ql^2/8
-            var qll8 = _dlt.Übertragungspunkte[i].Lastwert *
-                _dlt.Übertragungspunkte[i].Lastlänge * _dlt.Übertragungspunkte[i].Lastlänge / 8;
-            if (qll8 > maxMoment) maxMoment = qll8;
+            // maxMoment unter Gleichlast
+            if (!(Math.Abs(pi.Q) > 0)) continue;
+            var abstandMax = Math.Abs(pim1.Zr[3] / pi.Q);
+            if (abstandMax >= pi.Position - pim1.Position) continue;
+            var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Q * abstandMax * abstandMax / 2;
+            if (Math.Abs(mMax) > maxMoment) maxMoment = Math.Abs(mMax);
         }
         // am Ende ist nur Zl definiert
         var ende = _dlt.Übertragungspunkte.Count - 1;
@@ -748,7 +736,7 @@ public class Darstellung
             var pim1 = _dlt.Übertragungspunkte[index - 1];
             nextPunkt = new Point(pi.Position * Auflösung, pi.Zl[2] * _momentenAuflösung);
 
-            if (pi.Lastlänge < double.Epsilon)
+            if (pi.Q < double.Epsilon)
             {
                 pathFigure.Segments.Add(new LineSegment(nextPunkt, true));
             }
@@ -758,14 +746,14 @@ public class Darstellung
                 // var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
                 const double anzahlProEinheit = 5;
                 const double inkrement = 1 / anzahlProEinheit;
-                var anzahl = (int)(pi.Lastlänge / inkrement);
+                var anzahl = (int)((pi.Position - pim1.Position) / inkrement);
                 var polyLinePointArray = new Point[anzahl + 1];
                 for (var i = 0; i <= anzahl; i++)
                 {
                     // lokale x-Koordinate 0 <= x <= Lastlänge
                     var x = i * inkrement;
                     // M(x) = Ma + Qa*x - q*x*x/2
-                    var m = pim1.Zr[2] + pim1.Zr[3] * x - pi.Lastwert * (i * inkrement) * (i * inkrement) / 2;
+                    var m = pim1.Zr[2] + pim1.Zr[3] * x - pi.Q * (i * inkrement) * (i * inkrement) / 2;
                     var mPoint = new Point((pim1.Position + x) * Auflösung, m * _momentenAuflösung);
                     polyLinePointArray[i] = mPoint;
                 }
@@ -863,10 +851,10 @@ public class Darstellung
             //  Text an Maximalmoment unter Gleichlast
             var pi = _dlt.Übertragungspunkte[index];
             var pim1 = _dlt.Übertragungspunkte[index - 1];
-            if (!(pi.Lastlänge > double.Epsilon)) continue;
-            var abstandMax = Math.Abs(pim1.Zr[3] / pi.Lastwert);
-            if (abstandMax >= pi.Lastlänge) continue;
-            var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Lastwert * abstandMax * abstandMax / 2;
+            if (!(Math.Abs(pi.Q) > double.Epsilon)) continue;
+            var abstandMax = Math.Abs(pim1.Zr[3] / pi.Q);
+            if (abstandMax >= pi.Position - pim1.Position) continue;
+            var mMax = pim1.Zr[2] + pim1.Zr[3] * abstandMax - pi.Q * abstandMax * abstandMax / 2;
 
             var textPunkt = new Point((pim1.Position + abstandMax) * Auflösung, mMax * _momentenAuflösung);
             var maxText = new TextBlock
